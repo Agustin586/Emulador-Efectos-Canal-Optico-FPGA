@@ -71,6 +71,6 @@ Vale hasta que se defina la interfaz común con el grupo:
 
 ## Convenciones abiertas
 
-- **Interfaz de señal:** forma de los datos, muestras por símbolo y polarizaciones. Lo de arriba es una propuesta.
+- **Interfaz de señal:** forma de los datos, muestras por símbolo y polarizaciones.
 - **Definición de SNR:** por muestra o por símbolo (Es/N0). Afecta al bloque AWGN.
-- **Fórmula de la CD:** en las referencias consultadas la fase es `D·λ²·z·ω²/(4πc)`, sin un factor 1/2 adicional. Revisar contra la fórmula de la guía antes de implementar el bloque 03.
+- **Fórmula de la CD:** en las referencias consultadas la fase es `D·λ²·z·ω²/(4πc)`, sin un factor 1/2 adicional.
