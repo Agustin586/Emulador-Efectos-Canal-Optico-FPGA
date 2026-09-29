@@ -15,6 +15,16 @@ CONVENCIONES (referencia_guia_ISI_CD.md §3):
     (GUIA_ISI_CD.md §1, decisión 2).
   - Retardos: cada bloque declara su retardo entero en muestras (``delay_samples``).
   - Aleatoriedad: np.random.default_rng(seed); nunca el estado global de numpy.
+
+QUIÉN USA CADA ELEMENTO (explicado en notebooks/00_escenario_y_convenciones.ipynb):
+  - C, D_si, S_si  : los bloques, para pasar sus campos de hoja de datos a SI, y
+                     emulador/cd/, que calcula en SI.
+  - Scenario       : el canal (Rs, sps, lambda, roll-off -> fs, Ts). Lo usan los
+                     perfiles de ISI (B = B_rel·Rs), la CD (R, N), los estímulos,
+                     el receptor y los meta.json de los vectores exportados.
+  - HardwareParams : la implementación (P, f_clk, N_max), separada del canal
+                     porque un mismo canal admite distinto hardware. Lo usan cd_N
+                     y el modelo bit a bit.
 """
 from __future__ import annotations
 
