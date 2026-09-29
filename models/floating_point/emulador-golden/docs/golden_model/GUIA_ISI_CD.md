@@ -746,7 +746,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 **Base común**
 - [x] P0.a · Entorno y línea de base en ASUS
 - [x] P0.b · Entorno y línea de base en LENOVO
-- [ ] P1.1 · `config.py` (`C`, `D_si`, `S_si`, `Scenario`, `HardwareParams`) + `tests/test_config.py`
+- [x] P1.1 · `config.py` (`C`, `D_si`, `S_si`, `Scenario`, `HardwareParams`) + `tests/test_config.py`
 - [ ] P1.2 · Notebook `00_escenario_y_convenciones` (primera parte) — requiere Jupyter (decisión 11)
 - [ ] P2.1 · `metrics.py`: `nrmse`, `group_delay` + tests
 - [ ] P2.2 · `metrics.py`: `evm_opt`, `snr_eq_db`, `rms_width` + tests
