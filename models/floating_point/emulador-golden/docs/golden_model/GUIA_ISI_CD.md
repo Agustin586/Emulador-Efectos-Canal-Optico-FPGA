@@ -4,7 +4,7 @@ Guía para completar, **dentro de este repositorio**, el golden model de los blo
 
 - Referencia técnica: [referencia_guia_ISI_CD.md](referencia_guia_ISI_CD.md) (en esta guía, "Ref. §X").
 - Fundamento teórico: [Fundamentos_CD_ISI_golden_model.pdf](Fundamentos_CD_ISI_golden_model.pdf) (en esta guía, "PDF Ec. N").
-- Decisiones registradas: [decisiones/](decisiones/). Estado de sesiones: [ESTADO.md](ESTADO.md).
+- Decisiones: §1 de esta guía. Avance: checklist de §4 y `git log`.
 
 Todas las rutas son relativas a `models/floating_point/emulador-golden/`, salvo que se indique otra cosa.
 
@@ -12,28 +12,27 @@ Todas las rutas son relativas a `models/floating_point/emulador-golden/`, salvo 
 
 ## 1. Decisiones vigentes
 
-El detalle de cada una está en [decisiones/](decisiones/). Esta tabla es un resumen: si hay diferencias, vale el archivo de la decisión. Los IDs son `DEC-20260928-HHMM-asus`; en la tabla se abrevian con la hora.
+Esta tabla es el **único registro de decisiones**:
+- una decisión nueva se agrega como fila, en el mismo commit que la tarea que la necesitó;
+- si una decisión cambia, se edita su fila y el motivo va en el mensaje del commit;
+- una fila "sin confirmar" no se aplica al código hasta que Wanda la confirme.
 
-| ID | Tema | Decisión | Estado |
+| # | Tema | Decisión | Estado |
 |---|---|---|---|
-| [2029](decisiones/DEC-20260928-2029-asus-escenario-referencia.md) | Escenario de referencia | 32 GBd, 2 sps, f<sub>s</sub> = 64 GSa/s, **configurable** mediante `Scenario` | aceptada |
-| [2030](decisiones/DEC-20260928-2030-asus-signo-cd-positivo.md) | Signo de la CD | **Positivo**: H<sub>CD</sub>(f) = exp(+jπDλ²z f²/c), equivalente a exp(−jβ(ω)z) con β₂ = −Dλ²/(2πc) | aceptada |
-| [2031](decisiones/DEC-20260928-2031-asus-sin-factor-medio.md) | Factor ½ de la guía original del proyecto | **Descartado** | aceptada |
-| [2032](decisiones/DEC-20260928-2032-asus-beta3-incluido.md) | Término β₃ | Incluido, con S = 0 por defecto | aceptada |
-| [2033](decisiones/DEC-20260928-2033-asus-cd-overlap-save.md) | Método de la CD | Muestreo en frecuencia + overlap-save; FFT de L = 2N; retardo N/2; N ≥ R; N automático = max(128, menor potencia de 2 ≥ R) | aceptada |
-| [2034](decisiones/DEC-20260928-2034-asus-isi-fir-perfiles.md) | ISI | FIR complejo causal, K ≤ 32, energía normalizada. Coeficientes diseñados en frecuencia: Bessel y Butterworth desde el prototipo analógico, **nunca con la transformación bilineal**. Perfil principal: Bessel m = 4, B = 0,6 R<sub>s</sub>, K = 16. Regla: K = 32 si B ≤ 0,4 R<sub>s</sub> y m ≥ 4 | aceptada |
-| [2035](decisiones/DEC-20260928-2035-asus-hardware-rfsoc.md) | Hardware | RFSoC Zynq UltraScale+ (modelo sin confirmar); FFT radix-2² con paralelismo P parametrizable. P, f<sub>clk</sub> y N<sub>max</sub> son **provisorios** | aceptada (parcial) |
-
-Otras decisiones de la Fase 1 que condicionan esta guía:
-
-| ID | Tema | Decisión | Estado |
-|---|---|---|---|
-| [2036](decisiones/DEC-20260928-2036-asus-retardo-salida-alineada.md), [2037](decisiones/DEC-20260928-2037-asus-extension-block.md) | Retardo | `process()` devuelve la salida **alineada**, descontando el retardo entero. El bloque expone `delay_samples`, `coefficients()` y `process_hw()` (salida cruda, como el hardware) | aceptada para ISI/CD; la extensión de `Block` es **propuesta, afecta al equipo** |
-| [2038](decisiones/DEC-20260928-2038-asus-estimulos-modulo-nuevo.md) | Estímulos | Módulo nuevo `emulador/stimuli/`, sin tocar `common.py` | propuesta, afecta al equipo |
-| [2039](decisiones/DEC-20260928-2039-asus-notebooks-extra.md) | Notebooks | `notebooks/` + extra `notebooks` en `pyproject.toml` | propuesta, afecta al equipo |
-| [2040](decisiones/DEC-20260928-2040-asus-entorno-venv.md) | Entorno | venv por máquina (`.venv/`, ignorado); Docker más adelante | aceptada |
-| [2041](decisiones/DEC-20260928-2041-asus-adaptacion-estructura.md) | Estructura | Adaptación de la referencia al repositorio (§2) | aceptada |
-| [2042](decisiones/DEC-20260928-2042-asus-ubicacion-modelo-bit-a-bit.md) | Punto fijo | Modelo bit a bit en `models/fixed_point/emulador-real/` | **propuesta, sin confirmar** |
+| 1 | Escenario de referencia | 32 GBd, 2 sps, f<sub>s</sub> = 64 GSa/s, **configurable** mediante `Scenario` (`emulador/config.py`) | aceptada |
+| 2 | Signo de la CD | **Positivo**: H<sub>CD</sub>(f) = exp(+jπDλ²z f²/c), equivalente a exp(−jβ(ω)z) con β₂ = −Dλ²/(2πc). Hay que comunicarlo a la tesis de CDC, que debe usar H* | aceptada |
+| 3 | Factor ½ de la guía original del proyecto | **Descartado**: emularía la mitad de la dispersión | aceptada |
+| 4 | Término β₃ | Incluido, con S = 0 por defecto (con S = 0, β₃ = 0 exacto) | aceptada |
+| 5 | Método de la CD | Muestreo en frecuencia + overlap-save; FFT de L = 2N; retardo N/2; N ≥ R; N automático = max(128, menor potencia de 2 ≥ R), hasta N<sub>max</sub> | aceptada |
+| 6 | ISI | FIR complejo causal, K ≤ 32, energía normalizada. Coeficientes diseñados en frecuencia: Bessel y Butterworth desde el prototipo analógico, **nunca con la transformación bilineal**. Perfil principal: Bessel m = 4, B = 0,6 R<sub>s</sub>, K = 16. Regla: K = 32 si B ≤ 0,4 R<sub>s</sub> y m ≥ 4. Por defecto, el bloque queda en bypass | aceptada |
+| 7 | Hardware | RFSoC Zynq UltraScale+ (modelo sin confirmar); FFT radix-2² con paralelismo P parametrizable. P, f<sub>clk</sub> y N<sub>max</sub> son **provisorios** (`HardwareParams`). Reemplaza la suposición de Artix-7 del PDF | aceptada (parcial) |
+| 8 | Retardo | En ISI y CD, `process()` devuelve la salida **alineada** (descuenta el retardo entero; el fraccionario no se corrige). El bloque expone `delay_samples`, `coefficients()` y `process_hw()` (salida cruda, como el hardware, que es la que se exporta) | aceptada |
+| 9 | Extensión de `Block` | Agregar esas tres piezas a `common.Block` con valores neutros. Hasta que haya acuerdo, se definen solo en ISI y CD | confirmada; falta acuerdo del equipo |
+| 10 | Estímulos | Módulo nuevo `emulador/stimuli/`, sin tocar `common.py` | confirmada; falta acuerdo del equipo |
+| 11 | Notebooks | `notebooks/` + extra `notebooks` en `pyproject.toml` (`jupyterlab`, `ipykernel`, `jupytext`, `nbstripout`, `nbconvert`) | confirmada; falta acuerdo del equipo |
+| 12 | Entorno | venv por máquina en `.venv/` (ignorado); Docker más adelante | aceptada |
+| 13 | Estructura | Prevalecen las convenciones del repo sobre la referencia (§2) | aceptada |
+| 14 | Punto fijo | Modelo bit a bit en `models/fixed_point/emulador-real/`; en el golden solo utilidades y exploración | **sin confirmar** |
 
 ---
 
@@ -47,7 +46,7 @@ La Ref. §4 propone una estructura genérica. Acá se adapta al repositorio, que
 |---|---|---|
 | Identificadores en castellano (`Bloque`, `retardo`, `Escenario`, `cd_referencia`) | **Identificadores en inglés** (`Block`, `delay_samples`, `Scenario`, `cd_reference`); docstrings y comentarios en castellano | Convención de `emulador/` |
 | Clase `Bloque(fs)` en `base.py` con `__call__` | `common.Block` (dataclass): se implementa `process()`, y `__call__` maneja bypass y forma | Interfaz común del equipo |
-| `bloque.retardo` | `delay_samples` (propiedad del bloque) | Nombre en inglés; ver decisión de retardo |
+| `bloque.retardo` | `delay_samples` (propiedad del bloque) | Nombre en inglés; ver decisión 8 de §1 |
 | `bloque.coeficientes()` | `coefficients()` | Idem |
 | Parámetros del bloque en SI | **Campos del bloque en unidades de hoja de datos con sufijo** (`D_ps_nm_km`, `wavelength_nm`, `length_km`, `S_ps_nm2_km`). Todo el cálculo interno (`emulador/cd/`, `emulador/isi/`) es en SI, y la conversión se hace en el bloque con `config.D_si`/`S_si` | Convención de los esqueletos; la regla "SI adentro" de la Ref. §3 se mantiene |
 | Por defecto z = 100 km, perfil Bessel | **Por defecto, efecto nulo** (`length_km=0`, ISI en bypass). 100 km y Bessel m=4 son los casos de ensayo de tests y notebooks | `test_contract.py` exige efecto nulo por defecto |
@@ -117,17 +116,23 @@ class ChromaticDispersion(Block):
 
 ## 3. Pasos
 
-### 3.0 Cómo se trabaja cada paso
+### 3.0 Cómo se trabaja
 
-Todos los pasos siguen el mismo ciclo. Un paso no se da por terminado si falta alguna de estas partes.
+Cada paso (P1, A2, …) se divide en **tareas atómicas**, listadas en la checklist de §4. Una tarea es la unidad de trabajo entre las dos computadoras:
 
-1. **Leer** la sección de la referencia y del PDF que indica el paso. Anotar las dudas en `ESTADO.md` → "Preguntas abiertas".
-2. **Revisar las decisiones** en [decisiones/](decisiones/). Si el paso necesita una decisión que no está registrada, se crea como "propuesta" y se espera la confirmación.
-3. **Escribir los tests primero**, con los criterios numéricos del paso. Al principio fallan: eso confirma que el test mide algo.
+> **Una tarea = un commit = un push.** Al terminar una tarea el repositorio queda con los tests en verde y la casilla marcada. Así la otra computadora puede seguir con solo hacer `git pull`.
+
+Ciclo de cada tarea:
+
+1. `git pull --rebase` y elegir la primera tarea sin marcar de §4 (respetando las dependencias del paso).
+2. **Leer** la sección del paso en §3 y la parte de la referencia y del PDF que indica. Verificar que no contradiga §1; si hace falta una decisión nueva, preguntarle a Wanda y agregarla a §1.
+3. **Escribir los tests** con los criterios numéricos del paso.
 4. **Implementar** en `emulador/`. La lógica vive en funciones puras en SI (`emulador/isi/`, `emulador/cd/`); los bloques de `emulador/blocks/` solo convierten unidades y llaman a esas funciones.
-5. **Correr** `pytest` completo, no solo el archivo nuevo. `test_contract.py` tiene que seguir pasando.
-6. **Documentar** en el notebook del paso: teoría, parámetros, simulación, `assert` con los mismos criterios, gráficos y conclusiones. Guardar las figuras en `docs/golden_model/figuras/`.
-7. **Cerrar:** marcar la casilla en §4, actualizar `ESTADO.md` y hacer commit con prefijo `[golden-isi-cd]`.
+5. **Correr `pytest` completo.** `test_contract.py` tiene que seguir pasando.
+6. **Marcar la casilla** de la tarea en §4 y hacer commit: `[golden-isi-cd] <ID> <descripción>` (por ejemplo, `[golden-isi-cd] P2.1 nrmse y group_delay`).
+7. **Push**, preguntando antes.
+
+Si hay que cortar a mitad de una tarea, commit `[golden-isi-cd] <ID> WIP: <qué falta>` y push; la casilla queda sin marcar. Los tests pueden quedar rotos solo en un commit WIP.
 
 Cada paso tiene los mismos apartados:
 
@@ -170,7 +175,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
   2. `python3 -m venv .venv && . .venv/bin/activate`.
   3. `pip install -U pip && pip install -e ".[dev]"`. El modo editable hace que los notebooks y los tests vean los cambios sin reinstalar.
   4. `pytest` y `python -m scripts.run_block phase_offset --param delta_theta_rad=0.3`.
-  5. Anotar en la tabla de máquinas de `ESTADO.md` las versiones de Python, numpy y scipy (`pip list | grep -Ei "numpy|scipy|matplotlib|pytest"`).
+  5. Anotar en la tabla de máquinas de `CLAUDE.md` (raíz del repo) las versiones de Python, numpy y scipy (`pip list | grep -Ei "numpy|scipy|matplotlib|pytest"`).
 - **Tests:** los de `tests/test_contract.py`. Resultado esperado: los de `phase_offset` pasan y el resto de los bloques queda en `skipped`.
 - **Notebook:** —
 - **Errores a evitar:** instalar con el `pip` del sistema (hay que activar el venv antes); commitear `.venv/`; distintas versiones mayores de numpy o scipy en cada máquina.
@@ -244,7 +249,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 #### P3 · Estímulos — M
 
 - **Objetivo:** señales reproducibles de prueba física (impulso, pulso gaussiano, tonos) y de comunicación (PRBS → mapper Gray → RRC).
-- **Depende de:** P1. Usa la decisión "estímulos en módulo nuevo" (propuesta, afecta al equipo).
+- **Depende de:** P1. Usa la decisión 10 de §1 (estímulos en módulo nuevo).
 - **Para qué:** cada test necesita un estímulo específico. El impulso valida h[n], el gaussiano el ensanchamiento de la CD, los tonos \|H\| y φ, y QAM/PAM el efecto sobre una señal real. La PRBS es la misma que generará el hardware, así los vectores exportados son reproducibles en RTL (Ref. C.1).
 - **Archivos:** + `emulador/stimuli/{__init__,prbs,mapper,pulse,test_signals}.py`, + `tests/test_stimuli.py`.
 - **Qué hacer:**
@@ -449,12 +454,12 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
   | Fase cuadrática | ajuste de grado 2 a `unwrap(angle(h))` | residuo 10⁻¹⁰ |
   | Signo | fase de H<sub>FIR</sub> a baja frecuencia contra `cd_transfer` | mismo signo de curvatura |
   | Límite | z = 100 km a 64 GSa/s (R = 55) | `ValueError` |
-  | Contra la referencia | NRMSE contra `cd_reference` | **a definir**: medir en A4 y proponer como decisión |
+  | Contra la referencia | NRMSE contra `cd_reference` | **a definir**: medir en A4 y agregarlo a §1 |
 
 - **Notebook:** `02_isi_generica.ipynb`: coeficientes del chirp y comparación con la CD en frecuencia.
 - **Errores a evitar:** usar el signo de Savory tal cual sin verificarlo contra `cd_transfer` (Savory escribe el compensador).
 - **Verificar:** `pytest tests/test_isi.py -k cd_short -v`.
-- **Listo cuando:** los tests pasan y el criterio contra la referencia queda registrado como decisión.
+- **Listo cuando:** los tests pasan y el criterio contra la referencia quedó agregado a §1.
 
 #### A5 · Caracterización de la ISI — L
 
@@ -576,7 +581,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
      - `process_hw(x)`: `cd_overlap_save` recortado a len(x), fila por fila si la forma es (2, n);
      - `process(x)`: agregar N/2 ceros al final, aplicar OLS y tomar [N/2 : N/2 + n];
      - `from_scenario(esc, **kw)`.
-  4. Corregir el docstring del esqueleto: signo **positivo**, fórmula con β₃, `fs=64e9` por defecto y referencia a las decisiones.
+  4. Corregir el docstring del esqueleto: signo **positivo**, fórmula con β₃, `fs=64e9` por defecto y referencia a §1.
 - **Tests:**
 
   | Test | Cómo | Criterio |
@@ -636,17 +641,17 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 - **Objetivo:** confirmar el modelo de RFSoC, P, f<sub>clk</sub> y N<sub>max</sub>.
 - **Depende de:** información externa (dirección de tesis, equipo de RTL).
 - **Para qué:** el modelo bit a bit de la CD tiene que replicar las etapas radix-2² y el escalado de la FFT elegida (Ref. B.8). Sin esto, C3 no puede cerrarse para la CD.
-- **Archivos:** ~ `emulador/config.py` (`HardwareParams`), + decisión nueva en `decisiones/` que reemplaza los valores provisorios.
+- **Archivos:** ~ `emulador/config.py` (`HardwareParams`), ~ fila 7 de §1.
 - **Qué hacer:**
   1. Relevar: dispositivo (DS889), DSP disponibles y f<sub>clk</sub> alcanzable.
   2. Fijar P según la tasa de emulación deseada: R<sub>CD</sub> = P·f<sub>clk</sub>/2.
   3. Fijar N<sub>max</sub> según la distancia máxima emulada y la tabla de B4.
-  4. Registrar la decisión y actualizar `HardwareParams` con `provisional=False`.
+  4. Actualizar la fila 7 de §1 y `HardwareParams` con `provisional=False`.
 - **Tests:** `HardwareParams()` por defecto = valores decididos (exacto).
 - **Notebook:** `04_cd_overlap_save.ipynb`, sección de hardware.
 - **Errores a evitar:** decidir P solo por recursos sin fijar primero la tasa objetivo.
 - **Verificar:** `pytest tests/test_config.py`.
-- **Listo cuando:** la decisión está "aceptada" y los valores provisorios quedaron reemplazados.
+- **Listo cuando:** la fila 7 de §1 queda "aceptada" y los valores provisorios quedaron reemplazados.
 
 #### C2 · Utilidades de cuantización — S
 
@@ -672,12 +677,12 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 - **Notebook:** `05_cuantizacion.ipynb` (primera parte).
 - **Errores a evitar:** `np.round`, que redondea "half-even" y no coincide con el hardware.
 - **Verificar:** `pytest tests/test_quantization.py -v`.
-- **Listo cuando:** los tests pasan y la convención Qm.n está registrada como decisión.
+- **Listo cuando:** los tests pasan y la convención Qm.n está agregada a §1.
 
 #### C3 · Exploración de bits (ISI y CD) — M
 
 - **Objetivo:** curvas NRMSE contra bits, separando referencia → flotante → cuantizado.
-- **Depende de:** C2, A3 y B3. La réplica de la FFT de la CD depende además de C1 y de la decisión sobre la ubicación del modelo bit a bit (§6).
+- **Depende de:** C2, A3 y B3. La réplica de la FFT de la CD depende además de C1 y de la decisión 14 de §1 (ubicación del modelo bit a bit).
 - **Para qué:** dimensiona los anchos de palabra del RTL con un criterio numérico (Ref. C.3).
 - **Archivos:** + `notebooks/05_cuantizacion.ipynb`. El modelo bit a bit va donde se decida: golden o `models/fixed_point/emulador-real/`.
 - **Qué hacer:**
@@ -688,12 +693,12 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
      - barrer b y d, graficar NRMSE contra la salida flotante.
   2. **CD, primera aproximación** (sin réplica de FFT): cuantizar la entrada y H̄[k], y hacer la FFT en flotante. Punto de partida: Q2.8 y H̄ de 10 bits, NRMSE ≈ 2·10⁻³ hasta 400 km (Jiang).
   3. **CD, réplica radix-2² por etapas con escalado:** recién después de C1.
-  4. Registrar los formatos elegidos como decisión.
-- **Tests:** a definir con la decisión de formatos (por ejemplo, NRMSE < umbral para el formato elegido).
+  4. Agregar los formatos elegidos a §1.
+- **Tests:** a definir junto con los formatos (por ejemplo, NRMSE < umbral para el formato elegido).
 - **Notebook:** `05_cuantizacion.ipynb`: curvas NRMSE contra bits para h[k] y H̄[k], y crecimiento del acumulador.
 - **Errores a evitar:** comparar el cuantizado contra la referencia ideal en vez de contra el flotante (mezcla error de método y de cuantización).
 - **Verificar:** el notebook corre limpio.
-- **Listo cuando:** la decisión de formatos Qm.n está registrada.
+- **Listo cuando:** los formatos Qm.n están agregados a §1.
 
 #### C4 · Exportación de vectores — M
 
@@ -736,37 +741,64 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 
 ## 4. Checklist
 
+Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en el mismo commit que la completa.
+
 **Base común**
-- [x] P0 · Entorno y línea de base (ASUS)
-- [ ] P0 · Entorno y línea de base (LENOVO)
-- [ ] P1 · Escenario, unidades y hardware provisorio
-- [ ] P2 · Métricas
-- [ ] P3 · Estímulos
-- [ ] P4 · Receptor mínimo y gráficos
+- [x] P0.a · Entorno y línea de base en ASUS
+- [x] P0.b · Entorno y línea de base en LENOVO
+- [ ] P1.1 · `config.py` (`C`, `D_si`, `S_si`, `Scenario`, `HardwareParams`) + `tests/test_config.py`
+- [ ] P1.2 · Notebook `00_escenario_y_convenciones` (primera parte) — requiere Jupyter (decisión 11)
+- [ ] P2.1 · `metrics.py`: `nrmse`, `group_delay` + tests
+- [ ] P2.2 · `metrics.py`: `evm_opt`, `snr_eq_db`, `rms_width` + tests
+- [ ] P2.3 · `metrics.py`: `peak_distortion`, `isi_power_ratio`, `symbol_rate_response` + tests
+- [ ] P3.1 · `stimuli/prbs.py` (PRBS-15/31) + tests
+- [ ] P3.2 · `stimuli/mapper.py` (Gray PAM4/QAM16) + tests
+- [ ] P3.3 · `stimuli/pulse.py`, `CommSignal`, `comm_signal` + tests
+- [ ] P3.4 · `stimuli/test_signals.py` (impulso, pulso gaussiano, tono) + tests
+- [ ] P4.1 · `rx.py` (`matched_filter`, `recover`) + tests (back-to-back, retardo, fase)
+- [ ] P4.2 · `plots.py` + `style.mplstyle`
+- [ ] P4.3 · Notebook `01_estimulos`
 
 **Parte A · ISI**
-- [ ] A1 · FIR y bloque `ISI`
-- [ ] A2 · Perfiles eco, gaussiano y medido
-- [ ] A3 · Perfiles Bessel y Butterworth
-- [ ] A4 · Perfil CD corta
-- [ ] A5 · Caracterización y notebook 02
+- [ ] A1.1 · `isi/fir.py` (`isi_apply`, `isi_apply_stream`) + tests
+- [ ] A1.2 · Bloque `ISI` con taps (`delay_samples`, `process`, `process_hw`, `coefficients`) + tests + `run_block`
+- [ ] A2.1 · `isi/profiles.py`: `normalize_energy`, `echo`, `K_rule` + tests
+- [ ] A2.2 · `isi/profiles.py`: `gaussian`, `energy_captured` + tests
+- [ ] A2.3 · `isi/profiles.py`: `measured`; perfiles echo/gaussian/measured en el bloque + tests
+- [ ] A3.1 · `isi/profiles.py`: `analog` (Bessel/Butterworth) + tests de −3 dB y energía
+- [ ] A3.2 · Tests de fidelidad contra el prototipo analógico
+- [ ] A3.3 · Perfiles bessel/butter en el bloque + regresión del perfil principal (`tests/data/`)
+- [ ] A4.1 · Perfil `cd_short` (requiere B1.4) + tests
+- [ ] A5.1 · Test de SNR equivalente contra la Tabla 4 del PDF
+- [ ] A5.2 · Notebook `02_isi_generica`
 
 **Parte B · CD**
-- [ ] B1 · Física de la CD (incluye test de signo)
-- [ ] B2 · Referencia ideal y notebook 03
-- [ ] B3 · Overlap-save y bloque `ChromaticDispersion`
-- [ ] B4 · Alcance, residuo de β₃ y notebook 04
+- [ ] B1.1 · `cd/physics.py`: `betas`, `cd_transfer` + tests de signo, pasa-todo y composición
+- [ ] B1.2 · Tests de pendiente del retardo de grupo y parábola con β₃
+- [ ] B1.3 · `cd_R`, `cd_N` + tests de tabla
+- [ ] B1.4 · `savory_taps`, `cd_summary` + tests
+- [ ] B2.1 · `cd/reference.py` + tests de identidad, energía y reversibilidad
+- [ ] B2.2 · Test del pulso gaussiano
+- [ ] B2.3 · Notebook `03_cd_modelo_fisico`
+- [ ] B3.1 · `cd/overlap_save.py` (`cd_hbar`, `cd_overlap_save`) + test contra la referencia
+- [ ] B3.2 · Bloque `ChromaticDispersion` (docstring corregido, `fs=64e9`) + tests + `run_block`
+- [ ] B4.1 · Tests del residuo de β₃ (Tabla 17 del PDF)
+- [ ] B4.2 · Notebook `04_cd_overlap_save` (Figs. 9 y 10, hardware)
 
 **Cuantización y exportación**
-- [ ] C1 · Parámetros de hardware confirmados
-- [ ] C2 · Utilidades de cuantización
-- [ ] C3 · Exploración de bits y notebook 05
-- [ ] C4 · Exportación de vectores y notebook 06
+- [ ] C1.1 · Confirmar RFSoC, P, f<sub>clk</sub> y N<sub>max</sub>; actualizar `HardwareParams` y la fila 7 de §1
+- [ ] C2.1 · Definir la convención Qm.n (fila nueva en §1)
+- [ ] C2.2 · `quantization.py` + tests
+- [ ] C3.1 · Exploración de bits de la ISI (notebook `05_cuantizacion`)
+- [ ] C3.2 · Exploración de bits de la CD
+- [ ] C4.1 · `export.py` + tests
+- [ ] C4.2 · `scripts/export_vectors.py` con casos predefinidos
+- [ ] C4.3 · Notebook `06_vectores_rtl`
 
-**Coordinación**
+**Coordinación con el equipo**
 - [ ] Comunicar la convención de signo positiva a la tesis de CDC
-- [ ] PR al equipo: extensión de `Block` (retardo, coeficientes, `process_hw`)
-- [ ] PR al equipo: extra `notebooks` en `pyproject.toml` y módulo `stimuli/`
+- [ ] PR al equipo: extensión de `Block` (decisión 9)
+- [ ] PR al equipo: extra `notebooks` (decisión 11) y módulo `stimuli/` (decisión 10)
 - [ ] PR al equipo: estado de los bloques 01 y 03 en el README
 
 ---
@@ -777,11 +809,11 @@ Todo lo que sigue toca código o configuración compartidos: requiere acuerdo o 
 
 | Punto | Qué se toca | Cómo se maneja |
 |---|---|---|
-| Interfaz `Block` | `emulador/common.py`: agregar `delay_samples`, `coefficients()` y `process_hw()` con valores por defecto neutros | Decisión propuesta (afecta al equipo). Hasta aceptarse, se define solo en ISI y CD |
+| Interfaz `Block` | `emulador/common.py`: agregar `delay_samples`, `coefficients()` y `process_hw()` con valores por defecto neutros | Decisión 9 de §1. Hasta aceptarse, se define solo en ISI y CD |
 | Contrato por defecto | `tests/test_contract.py` | No se modifica. ISI y CD lo cumplen con bypass y z = 0 |
 | Utilidades nuevas | `emulador/config.py` (`Scenario`), `metrics.py`, `stimuli/`, `rx.py`, `plots.py` | Archivos nuevos que otros bloques pueden usar (AWGN, ruido de fase y PMD también necesitan f<sub>s</sub>). Avisar al crearlos |
 | Señal de prueba | `common.gen_signal` (β = 0,2, no Gray, sin PRBS) contra `stimuli/` (β = 0,1, Gray, PRBS) | No tocar `gen_signal`; proponer a futuro una sola fuente de estímulos |
-| Dependencias | `pyproject.toml`: extra `notebooks` (`jupyterlab`, `ipykernel`, `jupytext`, `nbstripout`, `nbconvert`) | Decisión propuesta; PR |
+| Dependencias | `pyproject.toml`: extra `notebooks` (`jupyterlab`, `ipykernel`, `jupytext`, `nbstripout`, `nbconvert`) | Decisión 11 de §1; PR |
 | Documentación | `README.md` del paquete: tabla de estado, "Convenciones abiertas" (signo de la CD ya decidido) | PR al cerrar A5 y B4 |
 | Definición de SNR | Bloque AWGN (otra persona) | La normalización Σ\|h\|² = 1 de la ISI supone potencia conservada; coordinar |
 | Tesis de CDC | Signo de H<sub>CD</sub> | Comunicar: su filtro usa la conjugada |
@@ -799,6 +831,7 @@ Todo lo que sigue toca código o configuración compartidos: requiere acuerdo o 
 | Ubicación del modelo bit a bit | La Ref. lo pone en el golden; el repo tiene `models/fixed_point/emulador-real/` | Utilidades y exploración en el golden, modelo bit a bit en `fixed_point` | **requiere decisión** (afecta al equipo) |
 | Formatos Qm.n | Sin definir | Arrancar de Q2.8 / 10 bits (Jiang) | abierta |
 | Tolerancia de la Tabla 4 (SNR eq. de la ISI) | El PDF no da tolerancia | ±0,5 dB | abierta |
+| EVM back-to-back | El piso real con roll-off 0,1 y span 32 no está medido | < 0,5 % hasta medirlo en P3.3 | abierta |
 | Criterio de "CD corta" contra la referencia | El PDF no lo define | Definir al hacer A4 | abierta |
 | Retardo fraccionario de Bessel/Butterworth | Afecta la EVM medida si el receptor no busca el instante óptimo | `rx.py` con búsqueda del instante (sps = 16 para análisis fino) | mitigado en P4 |
 | Versionado de notebooks | Diffs ilegibles y conflictos entre ASUS y LENOVO | `nbstripout` instalado en cada máquina + pares `jupytext` (percent) | abierta |
