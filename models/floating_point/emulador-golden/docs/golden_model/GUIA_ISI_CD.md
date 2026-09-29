@@ -29,7 +29,7 @@ Esta tabla es el **único registro de decisiones**:
 | 8 | Retardo | En ISI y CD, `process()` devuelve la salida **alineada** (descuenta el retardo entero; el fraccionario no se corrige). El bloque expone `delay_samples`, `coefficients()` y `process_hw()` (salida cruda, como el hardware, que es la que se exporta) | aceptada |
 | 9 | Extensión de `Block` | Agregar esas tres piezas a `common.Block` con valores neutros. Hasta que haya acuerdo, se definen solo en ISI y CD | confirmada; falta acuerdo del equipo |
 | 10 | Estímulos | Módulo nuevo `emulador/stimuli/`, sin tocar `common.py` | confirmada; falta acuerdo del equipo |
-| 11 | Notebooks | `notebooks/` + extra `notebooks` en `pyproject.toml` (`jupyterlab`, `ipykernel`, `jupytext`, `nbstripout`, `nbconvert`) | confirmada; falta acuerdo del equipo |
+| 11 | Notebooks | `notebooks/` + extra `notebooks` en `pyproject.toml` (`jupyterlab`, `ipykernel`, `jupytext`, `nbstripout`, `nbconvert`). Cada máquina corre `nbstripout --install` una vez (config local de git) | aplicada en `wanda_dev`; falta PR al equipo |
 | 12 | Entorno | venv por máquina en `.venv/` (ignorado); Docker más adelante | aceptada |
 | 13 | Estructura | Prevalecen las convenciones del repo sobre la referencia (§2) | aceptada |
 | 14 | Punto fijo | Modelo bit a bit en `models/fixed_point/emulador-real/`; en el golden solo utilidades y exploración | **sin confirmar** |
@@ -173,7 +173,8 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 - **Qué hacer:**
   1. `cd models/floating_point/emulador-golden`.
   2. `python3 -m venv .venv && . .venv/bin/activate`.
-  3. `pip install -U pip && pip install -e ".[dev]"`. El modo editable hace que los notebooks y los tests vean los cambios sin reinstalar.
+  3. `pip install -U pip && pip install -e ".[dev,notebooks]"`. El modo editable hace que los notebooks y los tests vean los cambios sin reinstalar.
+  3b. `nbstripout --install`: borra las salidas de los notebooks al commitear. Es configuración local de git, así que va una vez por máquina.
   4. `pytest` y `python -m scripts.run_block phase_offset --param delta_theta_rad=0.3`.
   5. Anotar en la tabla de máquinas de `CLAUDE.md` (raíz del repo) las versiones de Python, numpy y scipy (`pip list | grep -Ei "numpy|scipy|matplotlib|pytest"`).
 - **Tests:** los de `tests/test_contract.py`. Resultado esperado: los de `phase_offset` pasan y el resto de los bloques queda en `skipped`.
@@ -746,8 +747,10 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 **Base común**
 - [x] P0.a · Entorno y línea de base en ASUS
 - [x] P0.b · Entorno y línea de base en LENOVO
+- [x] P0.c · Extra `notebooks` en `pyproject.toml` + `nbstripout --install` (ASUS)
+- [ ] P0.d · `pip install -e ".[dev,notebooks]"` + `nbstripout --install` en LENOVO (no requiere commit)
 - [x] P1.1 · `config.py` (`C`, `D_si`, `S_si`, `Scenario`, `HardwareParams`) + `tests/test_config.py`
-- [ ] P1.2 · Notebook `00_escenario_y_convenciones` (primera parte) — requiere Jupyter (decisión 11)
+- [ ] P1.2 · Notebook `00_escenario_y_convenciones` (primera parte)
 - [ ] P2.1 · `metrics.py`: `nrmse`, `group_delay` + tests
 - [ ] P2.2 · `metrics.py`: `evm_opt`, `snr_eq_db`, `rms_width` + tests
 - [ ] P2.3 · `metrics.py`: `peak_distortion`, `isi_power_ratio`, `symbol_rate_response` + tests

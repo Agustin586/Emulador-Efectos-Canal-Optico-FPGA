@@ -17,7 +17,7 @@ Wanda desarrolla, en Python y en punto flotante, el golden model de dos bloques 
 
 | Nombre | Hostname | Sistema operativo | Entorno |
 |---|---|---|---|
-| asus | `wanda-ASUS-Vivobook-16-M1607KA-M1607KA` | Ubuntu 24.04.5 LTS | `$G/.venv`: Python 3.12.3, numpy 2.5.3, scipy 1.18.1, matplotlib 3.11.2, pytest 9.1.1 |
+| asus | `wanda-ASUS-Vivobook-16-M1607KA-M1607KA` | Ubuntu 24.04.5 LTS | `$G/.venv`: Python 3.12.3, numpy 2.5.3, scipy 1.18.1, matplotlib 3.11.2, pytest 9.1.1, jupyterlab 4.6.4; `nbstripout` instalado |
 | lenovo | `wanda-IdeaPad-5-15ALC05` | a completar | `$G/.venv`: versiones a completar |
 
 ### Firmas: prohibidas
@@ -68,5 +68,5 @@ Si la sesión termina a mitad de una tarea: commit `[golden-isi-cd] <ID> WIP: <q
   - los bloques heredan de `common.Block` e implementan `process`;
   - campos de los bloques en unidades de hoja de datos con sufijo, y cálculo interno en SI;
   - con los parámetros por defecto el efecto es nulo.
-- **Entorno:** venv por máquina en `$G/.venv` (ignorado). Instalación: `pip install -e ".[dev]"`.
+- **Entorno:** venv por máquina en `$G/.venv` (ignorado). Instalación: `pip install -e ".[dev,notebooks]"` y, una vez por máquina, `nbstripout --install` (borra las salidas de los notebooks al commitear).
 - **Tests:** `cd $G && pytest`. `tests/test_contract.py` tiene que seguir pasando siempre.
