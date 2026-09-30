@@ -16,6 +16,9 @@ notebooks = ["jupyterlab>=4", "ipykernel", "jupytext>=1.16", "nbstripout", "nbco
 [tool.setuptools.packages.find]
 include = ["emulador*"]
 
+[tool.setuptools.package-data]
+emulador = ["*.mplstyle"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"

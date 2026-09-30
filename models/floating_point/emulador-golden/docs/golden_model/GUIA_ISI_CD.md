@@ -803,7 +803,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 **Coordinación con el equipo**
 - [ ] Comunicar la convención de signo positiva a la tesis de CDC
 - [ ] PR al equipo: extensión de `Block` (decisión 9)
-- [ ] PR al equipo: extra `notebooks` (decisión 11) y módulo `stimuli/` (decisión 10)
+- [ ] PR al equipo: extra `notebooks` (decisión 11), `package-data` de `style.mplstyle` y módulo `stimuli/` (decisión 10)
 - [ ] PR al equipo: estado de los bloques 01 y 03 en el README
 
 ---
