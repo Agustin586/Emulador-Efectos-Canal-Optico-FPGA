@@ -1,0 +1,37 @@
+# Estilo de los gráficos del golden model de ISI y CD (paleta de las presentaciones).
+# Uso: emulador.plots.use_style()
+
+axes.prop_cycle    : cycler('color', ['14213D', 'B35418', '2B5C9E', '7A8499', 'D9A07A'])
+axes.edgecolor     : 7A8499
+axes.labelcolor    : 14213D
+axes.titlecolor    : 14213D
+axes.titlesize     : 14
+axes.titleweight   : bold
+axes.labelsize     : 12
+axes.grid          : True
+axes.axisbelow     : True
+axes.spines.top    : False
+axes.spines.right  : False
+
+grid.color         : 7A8499
+grid.alpha         : 0.25
+grid.linewidth     : 0.6
+
+xtick.color        : 14213D
+ytick.color        : 14213D
+xtick.labelsize    : 11
+ytick.labelsize    : 11
+
+legend.fontsize    : 11
+legend.frameon     : False
+
+lines.linewidth    : 1.6
+lines.markersize   : 4
+
+figure.figsize     : 7, 4.5
+figure.dpi         : 110
+figure.titlesize   : 15
+figure.constrained_layout.use : True
+
+savefig.dpi        : 200
+savefig.bbox       : tight
