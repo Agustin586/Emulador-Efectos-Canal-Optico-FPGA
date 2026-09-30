@@ -761,7 +761,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] P3.4 · `stimuli/test_signals.py` (impulso, pulso gaussiano, tono) + tests
 - [x] P4.1 · `rx.py` (`matched_filter`, `recover`) + tests (back-to-back, retardo, fase)
 - [x] P4.2 · `plots.py` + `style.mplstyle`
-- [ ] P4.3 · Notebook `01_estimulos`
+- [x] P4.3 · Notebook `01_estimulos`
 
 **Parte A · ISI**
 - [ ] A1.1 · `isi/fir.py` (`isi_apply`, `isi_apply_stream`) + tests
