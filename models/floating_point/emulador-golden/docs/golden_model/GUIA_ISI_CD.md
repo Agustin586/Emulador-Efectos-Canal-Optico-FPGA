@@ -755,7 +755,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] P2.2 · `metrics.py`: `evm_opt`, `snr_eq_db`, `rms_width` + tests
 - [x] P2.3 · `metrics.py`: `peak_distortion`, `isi_power_ratio`, `symbol_rate_response` + tests
 - [x] P3.1 · `stimuli/prbs.py` (PRBS-15/31) + tests
-- [ ] P3.2 · `stimuli/mapper.py` (Gray PAM4/QAM16) + tests
+- [x] P3.2 · `stimuli/mapper.py` (Gray PAM4/QAM16) + tests
 - [ ] P3.3 · `stimuli/pulse.py`, `CommSignal`, `comm_signal` + tests
 - [ ] P3.4 · `stimuli/test_signals.py` (impulso, pulso gaussiano, tono) + tests
 - [ ] P4.1 · `rx.py` (`matched_filter`, `recover`) + tests (back-to-back, retardo, fase)
