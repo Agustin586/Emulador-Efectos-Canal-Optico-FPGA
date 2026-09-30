@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from emulador.config import Scenario
-from emulador.metrics import group_delay, nrmse
+from emulador.metrics import evm_opt, group_delay, nrmse, rms_width, snr_eq_db
 
 FS = Scenario().fs
 TS = Scenario().Ts
@@ -82,3 +82,83 @@ def test_group_delay_of_symmetric_fir():
     L = 512
     f_out, tau = group_delay(np.fft.fft(h, L), FS)
     assert np.allclose(tau, 2 * TS, rtol=1e-9, atol=0)
+
+
+# --------------------------------------------------------------------------
+# evm_opt y snr_eq_db
+# --------------------------------------------------------------------------
+def _orthogonal_error(ref, rel_power, seed=5):
+    """Error e ortogonal a ref (sum conj(ref)·e = 0) con |e|^2 = rel_power·|ref|^2."""
+    e = _noise(len(ref), seed)
+    e = e - np.vdot(ref, e) / np.vdot(ref, ref) * ref
+    return e * np.sqrt(rel_power) * np.linalg.norm(ref) / np.linalg.norm(e)
+
+
+def test_evm_opt_ignores_gain_and_phase():
+    ref = _noise()
+    assert evm_opt(2 * np.exp(0.7j) * ref, ref) <= 1e-12
+
+
+def test_evm_opt_with_orthogonal_error():
+    """Con ganancia óptima, EVM^2 = N/(S+N) (no N/S): acá N/S = 0.01."""
+    ref = _noise()
+    rx = ref + _orthogonal_error(ref, 0.01)
+    assert np.isclose(evm_opt(rx, ref) ** 2, 0.01 / 1.01, rtol=1e-12, atol=0)
+
+
+def test_evm_opt_discard_edges():
+    ref = _noise(1000)
+    rx = ref.copy()
+    rx[:10] = 0
+    rx[-10:] = 0
+    assert evm_opt(rx, ref) > 0.1
+    assert evm_opt(rx, ref, discard=10) <= 1e-12
+
+
+def test_evm_opt_rejects_invalid_inputs():
+    with pytest.raises(ValueError):
+        evm_opt(np.ones(10), np.ones(11))
+    with pytest.raises(ValueError):
+        evm_opt(np.zeros(10), np.ones(10))
+
+
+def test_snr_eq_db():
+    """N/S = 0.01 -> EVM^2 = 1/101 -> SNR_eq = 10·log10(101) = 20.04 dB."""
+    ref = _noise()
+    rx = ref + _orthogonal_error(ref, 0.01)
+    assert np.isclose(snr_eq_db(rx, ref), 10 * np.log10(101), rtol=0, atol=1e-9)
+
+
+def test_snr_eq_db_without_error_is_infinite():
+    ref = _noise()
+    assert snr_eq_db(ref, ref) == np.inf
+
+
+# --------------------------------------------------------------------------
+# rms_width
+# --------------------------------------------------------------------------
+def _gaussian(T0, t, t1=0.0):
+    return np.exp(-((t - t1) ** 2) / (2 * T0**2))
+
+
+def test_rms_width_of_gaussian_pulse():
+    """a = exp(-t^2/2T0^2) -> |a|^2 = exp(-t^2/T0^2) -> sigma = T0/sqrt(2)."""
+    T0 = 15.6e-12
+    t = np.arange(-4096, 4096) * 0.5e-12
+    assert np.isclose(rms_width(_gaussian(T0, t), t), T0 / np.sqrt(2), rtol=1e-3, atol=0)
+
+
+def test_rms_width_ignores_shift_scale_and_phase():
+    T0 = 15.6e-12
+    t = np.arange(-4096, 4096) * 0.5e-12
+    ref = rms_width(_gaussian(T0, t), t)
+    a = 3.0 * np.exp(1j * 1e11 * t) * _gaussian(T0, t, t1=200e-12)
+    assert np.isclose(rms_width(a, t), ref, rtol=1e-9, atol=0)
+
+
+def test_rms_width_rejects_invalid_inputs():
+    t = np.arange(10.0)
+    with pytest.raises(ValueError):
+        rms_width(np.ones(9), t)
+    with pytest.raises(ValueError):
+        rms_width(np.zeros(10), t)
