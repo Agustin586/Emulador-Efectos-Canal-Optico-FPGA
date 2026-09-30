@@ -18,7 +18,7 @@ Wanda desarrolla, en Python y en punto flotante, el golden model de dos bloques 
 | Nombre | Hostname | Sistema operativo | Entorno |
 |---|---|---|---|
 | asus | `wanda-ASUS-Vivobook-16-M1607KA-M1607KA` | Ubuntu 24.04.5 LTS | `$G/.venv`: Python 3.12.3, numpy 2.5.3, scipy 1.18.1, matplotlib 3.11.2, pytest 9.1.1, jupyterlab 4.6.4; `nbstripout` instalado |
-| lenovo | `wanda-IdeaPad-5-15ALC05` | a completar | `$G/.venv`: versiones a completar |
+| lenovo | `wanda-IdeaPad-5-15ALC05` | Ubuntu 24.04.5 LTS | `$G/.venv`: Python 3.12.3, numpy 2.5.3, scipy 1.18.1, matplotlib 3.11.2, pytest 9.1.1, jupyterlab 4.6.4; `nbstripout` instalado (2026-09-30) |
 
 ### Firmas: prohibidas
 
