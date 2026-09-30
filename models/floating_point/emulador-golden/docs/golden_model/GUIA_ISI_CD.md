@@ -34,6 +34,7 @@ Esta tabla es el **único registro de decisiones**:
 | 13 | Estructura | Prevalecen las convenciones del repo sobre la referencia (§2) | aceptada |
 | 14 | Punto fijo | Modelo bit a bit en `models/fixed_point/emulador-real/`; en el golden solo utilidades y exploración | **sin confirmar** |
 | 15 | RRC de los estímulos y del receptor | span = 64 símbolos por defecto (`shape`, `comm_signal`, `matched_filter`). Piso de EVM back-to-back medido en P3.3 con roll-off 0,1 y 2 sps: span 32 → 0,58 %, 48 → 0,27 %, **64 → 0,12 %**, 96 → 0,04 %. Criterio back-to-back: EVM < 0,5 % | aceptada |
+| 16 | Convención de la PRBS | LFSR de Fibonacci según ITU-T O.150 (x<sup>m</sup> + x<sup>k</sup> + 1): b[n] = b[n−m] ⊕ b[n−k]. Los primeros m bits de salida son la semilla, del MSB al LSB. Sin inversión por defecto; `invert=True` da la salida invertida que O.150 pide para PRBS-15/23/31. El generador del RTL tiene que usar la misma convención | aceptada |
 
 ---
 

@@ -3,7 +3,7 @@
 Los vectores que se exportan al RTL usan estos bits, no ``rng.integers``: así el
 hardware puede regenerar el mismo estímulo con un LFSR (referencia §C.1).
 
-CONVENCIÓN (tiene que coincidir con el LFSR del RTL):
+CONVENCIÓN (tiene que coincidir con el LFSR del RTL; GUIA_ISI_CD.md §1, decisión 16):
   - LFSR de Fibonacci con polinomio x^m + x^k + 1. La secuencia de salida cumple
         b[n] = b[n-m] xor b[n-k]
   - Los primeros m bits de salida son la semilla, del bit más significativo al
