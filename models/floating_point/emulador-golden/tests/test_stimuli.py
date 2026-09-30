@@ -1,8 +1,13 @@
 """Estímulos (paso P3 de GUIA_ISI_CD.md)."""
+import json
+
 import numpy as np
 import pytest
 
-from emulador.stimuli import map_gray, prbs
+from emulador.common import rrc_taps
+from emulador.config import Scenario
+from emulador.metrics import evm_opt
+from emulador.stimuli import comm_signal, map_gray, prbs, shape
 
 
 # --------------------------------------------------------------------------
@@ -112,3 +117,51 @@ def test_map_gray_rejects_bad_length(mod, n):
 def test_map_gray_rejects_unknown_mod():
     with pytest.raises(ValueError):
         map_gray(np.zeros(4, dtype=np.uint8), "qpsk")
+
+
+# --------------------------------------------------------------------------
+# shape, CommSignal, comm_signal
+# --------------------------------------------------------------------------
+@pytest.mark.parametrize("sps", [1, 2, 4, 16])
+def test_shape_unit_power_and_length(sps):
+    esc = Scenario(sps=sps)
+    sym = map_gray(prbs(15, 4 * 1000), "qam16")
+    x = shape(sym, esc)
+    assert x.shape == (1000 * sps,)
+    assert np.isclose(np.mean(np.abs(x) ** 2), 1.0, rtol=0, atol=1e-12)
+
+
+@pytest.mark.parametrize("mod", ["qam16", "pam4"])
+def test_comm_signal_back_to_back(mod):
+    # filtro adaptado ideal (sin búsqueda de instante: shape no agrega retardo)
+    esc = Scenario()
+    sig = comm_signal(esc, mod=mod)
+    y = np.convolve(sig.samples, rrc_taps(esc.rolloff, sig.span, esc.sps), mode="same")
+    y = y[:: esc.sps]
+    d = sig.span
+    assert 100 * evm_opt(y[d:-d], sig.symbols[d:-d]) < 0.5  # decisión 15 de §1
+
+
+def test_comm_signal_consistency():
+    sig = comm_signal(Scenario(), mod="pam4", n_symbols=500, prbs_order=31, seed=9)
+    assert np.array_equal(sig.bits, prbs(31, 1000, seed=9))
+    assert np.array_equal(sig.symbols, map_gray(sig.bits, "pam4"))
+    assert sig.samples.shape == (1000,)
+
+
+def test_comm_signal_reproducible():
+    a = comm_signal(Scenario(), seed=5)
+    b = comm_signal(Scenario(), seed=5)
+    assert np.array_equal(a.samples, b.samples)
+    assert not np.array_equal(a.samples, comm_signal(Scenario(), seed=6).samples)
+
+
+def test_comm_signal_meta():
+    esc = Scenario(Rs=64e9)
+    m = comm_signal(esc, mod="pam4", n_symbols=256, prbs_order=31, seed=3).meta()
+    assert m["scenario"] == esc.to_dict()
+    assert (m["seed"], m["prbs_order"], m["mod"], m["n_symbols"]) == (3, 31, "pam4", 256)
+    assert m["n_samples"] == 256 * esc.sps
+    assert m["span"] == 64
+    assert isinstance(m["version"], str)
+    json.dumps(m)  # tiene que poder ir a meta.json

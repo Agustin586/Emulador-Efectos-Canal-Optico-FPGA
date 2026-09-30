@@ -33,6 +33,7 @@ Esta tabla es el **único registro de decisiones**:
 | 12 | Entorno | venv por máquina en `.venv/` (ignorado); Docker más adelante | aceptada |
 | 13 | Estructura | Prevalecen las convenciones del repo sobre la referencia (§2) | aceptada |
 | 14 | Punto fijo | Modelo bit a bit en `models/fixed_point/emulador-real/`; en el golden solo utilidades y exploración | **sin confirmar** |
+| 15 | RRC de los estímulos y del receptor | span = 64 símbolos por defecto (`shape`, `comm_signal`, `matched_filter`). Piso de EVM back-to-back medido en P3.3 con roll-off 0,1 y 2 sps: span 32 → 0,58 %, 48 → 0,27 %, **64 → 0,12 %**, 96 → 0,04 %. Criterio back-to-back: EVM < 0,5 % | aceptada |
 
 ---
 
@@ -261,7 +262,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
      - PAM4: 00→−3, 01→−1, 11→+1, 10→+3, normalizado por √5.
      - QAM16: 2 bits para I y 2 para Q, cada uno como PAM4 Gray, normalizado por √10.
      - Error si `len(bits)` no es múltiplo de los bits por símbolo.
-  3. **`pulse.py`:** `shape(symbols, esc, span=32)` inserta ceros (× sps) y convoluciona con `common.rrc_taps(esc.rolloff, span, esc.sps)` en modo `"same"`, como `gen_signal`. Normaliza a potencia media 1.
+  3. **`pulse.py`:** `shape(symbols, esc, span=64)` inserta ceros (× sps) y convoluciona con `common.rrc_taps(esc.rolloff, span, esc.sps)` en modo `"same"`, como `gen_signal`. Normaliza a potencia media 1.
   4. **`CommSignal`** (dataclass): `samples`, `symbols`, `bits`, `scenario`, `seed`, `mod`, más `meta()`. Y `comm_signal(esc, mod="qam16", n_symbols=4096, prbs_order=15, seed=1)`.
   5. **`test_signals.py`:**
      - `impulse(n, pos)`;
@@ -275,12 +276,12 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
   | Balance | contar unos en un período | 2¹⁴ (exacto) |
   | Gray | etiquetas de símbolos vecinos | difieren en 1 bit (exacto) |
   | Potencia | constelación completa | media 1 (10⁻¹²) |
-  | Back-to-back | `comm_signal` → `rx` (P4) con roll-off 0,1 | EVM < 0,5 % (criterio propuesto) |
+  | Back-to-back | `comm_signal` → filtro adaptado ideal con roll-off 0,1 (en P4, con `recover`) | EVM < 0,5 % (decisión 15) |
   | Tono | `fft(tone(k, n))` | un solo bin ≠ 0 (10⁻¹²) |
   | Reproducible | misma semilla dos veces | idéntico (exacto) |
 
 - **Notebook:** `01_estimulos.ipynb`: bits → símbolos → espectro del RRC (ancho (1+roll-off)·R<sub>s</sub>), constelación limpia y ojo PAM4.
-- **Errores a evitar:** usar `rng.integers` en lugar de la PRBS para los vectores de RTL; olvidar normalizar la potencia (la ISI supone potencia 1); span corto (< 32 símbolos) que sube el piso de EVM.
+- **Errores a evitar:** usar `rng.integers` en lugar de la PRBS para los vectores de RTL; olvidar normalizar la potencia (la ISI supone potencia 1); span corto que sube el piso de EVM (con 32 símbolos y roll-off 0,1 ya da 0,58 %; decisión 15).
 - **Verificar:** `pytest tests/test_stimuli.py -v`.
 - **Listo cuando:** los tests pasan y `CommSignal.meta()` incluye escenario, semilla, orden de PRBS, modulación y largo.
 
@@ -291,7 +292,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 - **Para qué:** Bessel y Butterworth introducen un retardo con parte fraccionaria, y la CD rota la constelación. Sin buscar el instante óptimo ni descontar el retardo, la EVM medida refleja el receptor y no el canal (PDF §3.5.5: más de 10 dB de diferencia).
 - **Archivos:** + `emulador/rx.py`, + `emulador/plots.py`, + `emulador/style.mplstyle`, ~ `tests/test_stimuli.py`.
 - **Qué hacer:**
-  1. `matched_filter(x, esc, span=32)`: convolución con el mismo RRC.
+  1. `matched_filter(x, esc, span=64)`: convolución con el mismo RRC.
   2. `recover(x, sig, search=True) -> RxResult(symbols, phase, delay, evm)`:
      - para cada fase de muestreo 0 … sps−1, submuestrear;
      - estimar el retardo entero en símbolos por correlación cruzada con `sig.symbols`;
@@ -756,7 +757,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] P2.3 · `metrics.py`: `peak_distortion`, `isi_power_ratio`, `symbol_rate_response` + tests
 - [x] P3.1 · `stimuli/prbs.py` (PRBS-15/31) + tests
 - [x] P3.2 · `stimuli/mapper.py` (Gray PAM4/QAM16) + tests
-- [ ] P3.3 · `stimuli/pulse.py`, `CommSignal`, `comm_signal` + tests
+- [x] P3.3 · `stimuli/pulse.py`, `CommSignal`, `comm_signal` + tests
 - [ ] P3.4 · `stimuli/test_signals.py` (impulso, pulso gaussiano, tono) + tests
 - [ ] P4.1 · `rx.py` (`matched_filter`, `recover`) + tests (back-to-back, retardo, fase)
 - [ ] P4.2 · `plots.py` + `style.mplstyle`
@@ -834,7 +835,7 @@ Todo lo que sigue toca código o configuración compartidos: requiere acuerdo o 
 | Ubicación del modelo bit a bit | La Ref. lo pone en el golden; el repo tiene `models/fixed_point/emulador-real/` | Utilidades y exploración en el golden, modelo bit a bit en `fixed_point` | **requiere decisión** (afecta al equipo) |
 | Formatos Qm.n | Sin definir | Arrancar de Q2.8 / 10 bits (Jiang) | abierta |
 | Tolerancia de la Tabla 4 (SNR eq. de la ISI) | El PDF no da tolerancia | ±0,5 dB | abierta |
-| EVM back-to-back | El piso real con roll-off 0,1 y span 32 no está medido | < 0,5 % hasta medirlo en P3.3 | abierta |
+| EVM back-to-back | Con roll-off 0,1 y span 32 el piso es 0,58 % (medido en P3.3) | span 64: piso 0,12 % (decisión 15) | cerrada |
 | Criterio de "CD corta" contra la referencia | El PDF no lo define | Definir al hacer A4 | abierta |
 | Retardo fraccionario de Bessel/Butterworth | Afecta la EVM medida si el receptor no busca el instante óptimo | `rx.py` con búsqueda del instante (sps = 16 para análisis fino) | mitigado en P4 |
 | Versionado de notebooks | Diffs ilegibles y conflictos entre ASUS y LENOVO | `nbstripout` instalado en cada máquina + pares `jupytext` (percent) | abierta |

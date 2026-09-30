@@ -2,8 +2,10 @@
 
   - prbs         : bits pseudoaleatorios reproducibles en hardware (ITU-T O.150).
   - mapper       : bits -> símbolos PAM4/QAM16 con Gray, potencia 1.
+  - pulse        : RRC (shape) y señal completa PRBS -> Gray -> RRC (comm_signal).
 """
 from .mapper import BITS_PER_SYMBOL, map_gray
 from .prbs import prbs
+from .pulse import CommSignal, comm_signal, shape
 
-__all__ = ["BITS_PER_SYMBOL", "map_gray", "prbs"]
+__all__ = ["BITS_PER_SYMBOL", "CommSignal", "comm_signal", "map_gray", "prbs", "shape"]
