@@ -7,6 +7,7 @@ import pytest
 from emulador.common import rrc_taps
 from emulador.config import Scenario
 from emulador.metrics import evm_opt, rms_width
+from emulador.rx import recover
 from emulador.stimuli import (
     centered_time,
     comm_signal,
@@ -208,3 +209,53 @@ def test_tone_single_bin(k):
     others = np.delete(np.abs(X), k % n)
     assert np.isclose(abs(X[k % n]), n, rtol=1e-12, atol=0)
     assert np.max(others) / n < 1e-12
+
+
+# --------------------------------------------------------------------------
+# rx: matched_filter, recover (paso P4)
+# --------------------------------------------------------------------------
+def _delayed(x, d):
+    """x retrasada d muestras, mismo largo (entran ceros al principio)."""
+    return np.concatenate([np.zeros(d, dtype=complex), x[: len(x) - d]])
+
+
+@pytest.mark.parametrize("mod", ["qam16", "pam4"])
+def test_recover_back_to_back(mod):
+    sig = comm_signal(Scenario(), mod=mod)
+    r = recover(sig.samples, sig)
+    assert (r.phase, r.delay) == (0, 0)
+    assert 100 * r.evm < 0.5  # decisión 15 de §1
+
+
+@pytest.mark.parametrize("sps", [2, 4])
+def test_recover_integer_delay(sps):
+    esc = Scenario(sps=sps)
+    sig = comm_signal(esc)
+    floor = recover(sig.samples, sig).evm
+    r = recover(_delayed(sig.samples, 7), sig)
+    assert r.delay_samples(sps) == 7
+    assert (r.delay, r.phase) == divmod(7, sps)
+    assert np.isclose(r.evm, floor, rtol=0.05, atol=0)
+
+
+def test_recover_without_search_sees_the_delay():
+    sig = comm_signal(Scenario())
+    r = recover(_delayed(sig.samples, 7), sig, search=False)
+    assert 100 * r.evm > 50
+
+
+def test_recover_carrier_phase():
+    sig = comm_signal(Scenario())
+    floor = recover(sig.samples, sig).evm
+    r = recover(sig.samples * np.exp(0.5j), sig)
+    assert np.isclose(r.evm, floor, rtol=1e-6, atol=0)
+    # los símbolos devueltos ya vienen corregidos en ganancia y fase
+    assert 100 * np.sqrt(np.mean(np.abs(r.symbols - r.ref) ** 2)) < 0.5
+
+
+def test_recover_negative_delay():
+    sig = comm_signal(Scenario())
+    x = np.concatenate([sig.samples[6:], np.zeros(6, dtype=complex)])  # adelanto de 3 símbolos
+    r = recover(x, sig)
+    assert r.delay_samples(2) == -6
+    assert 100 * r.evm < 0.5
