@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from .common import rrc_taps
+
 
 # --------------------------------------------------------------------------
 # Comparación entre modelos
@@ -133,3 +135,60 @@ def group_delay(H: np.ndarray, fs: float) -> tuple[np.ndarray, np.ndarray]:
     # Calcula el retardo de grupo como la derivada negativa de la fase respecto a la frecuencia angular 
     tau = -np.gradient(phase, 2 * np.pi * f, edge_order=2) 
     return f, tau
+
+
+# --------------------------------------------------------------------------
+# Severidad de la ISI (PDF §3.7)
+# --------------------------------------------------------------------------
+def _split_cursor(p: np.ndarray) -> tuple[float, np.ndarray]:
+    """Separa el cursor principal (el de mayor módulo) del resto de la respuesta."""
+    p = np.asarray(p)
+    if not np.any(p):
+        raise ValueError("respuesta nula: no hay cursor principal")
+    n0 = int(np.argmax(np.abs(p)))
+    return float(np.abs(p[n0])), np.delete(p, n0)
+
+
+def peak_distortion(p: np.ndarray) -> float:
+    """Distorsión de pico D_p = sum_{n != n0} |p[n]| / |p[n0]| (PDF Ec. 13).
+
+    ``p`` es la respuesta total muestreada a la tasa de símbolos (ver
+    ``symbol_rate_response``); el cursor principal n0 es el de mayor módulo.
+    D_p < 1 indica ojo abierto para modulaciones de dos niveles.
+    """
+    cursor, rest = _split_cursor(p)
+    return float(np.sum(np.abs(rest)) / cursor)
+
+
+def isi_power_ratio(p: np.ndarray) -> float:
+    """Potencia de ISI relativa al cursor: sum_{n != n0} |p[n]|^2 / |p[n0]|^2.
+
+    Su inversa en dB, -10·log10(isi_power_ratio), es la "SNR equivalente" de la
+    Tabla 4 del PDF, que se compara directamente con la SNR del enlace.
+    """
+    cursor, rest = _split_cursor(p)
+    return float(np.sum(np.abs(rest) ** 2) / cursor**2)
+
+
+def symbol_rate_response(
+    h: np.ndarray, sps: int, rolloff: float, span: int = 32, phase: int = 0
+) -> np.ndarray:
+    """Respuesta total RRC * h * RRC muestreada a la tasa de símbolos.
+
+    Es la p[n] de ``peak_distortion`` e ``isi_power_ratio``: transmisor (RRC),
+    canal (h, a fs) y filtro adaptado (RRC), tomando una muestra cada ``sps``
+    a partir de ``phase`` (0 <= phase < sps). Sin canal (h = [1]) y con
+    phase = 0 se muestrea en el pico del coseno realzado, que vale 1 porque
+    ``rrc_taps`` tiene energía unitaria.
+
+    El RRC truncado deja un piso de ISI propio: con roll-off 0.1 es de -44.6 dB
+    con span = 32 y de -35.5 dB con span = 16. Por eso span = 32 por defecto.
+
+    Para el instante óptimo con un retardo fraccionario, probar todas las fases
+    o usar un escenario con más sps.
+    """
+    if not 0 <= phase < sps:
+        raise ValueError(f"phase debe estar entre 0 y sps - 1 = {sps - 1}: {phase!r}")
+    g = rrc_taps(rolloff, span, sps)
+    total = np.convolve(np.convolve(g, np.asarray(h)), g)
+    return total[phase::sps]

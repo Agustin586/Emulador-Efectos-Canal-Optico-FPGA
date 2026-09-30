@@ -3,7 +3,16 @@ import numpy as np
 import pytest
 
 from emulador.config import Scenario
-from emulador.metrics import evm_opt, group_delay, nrmse, rms_width, snr_eq_db
+from emulador.metrics import (
+    evm_opt,
+    group_delay,
+    isi_power_ratio,
+    nrmse,
+    peak_distortion,
+    rms_width,
+    snr_eq_db,
+    symbol_rate_response,
+)
 
 FS = Scenario().fs
 TS = Scenario().Ts
@@ -162,3 +171,62 @@ def test_rms_width_rejects_invalid_inputs():
         rms_width(np.ones(9), t)
     with pytest.raises(ValueError):
         rms_width(np.zeros(10), t)
+
+
+# --------------------------------------------------------------------------
+# peak_distortion e isi_power_ratio
+# --------------------------------------------------------------------------
+def test_no_isi():
+    p = np.array([0.0, 1.0, 0.0])
+    assert peak_distortion(p) == 0.0
+    assert isi_power_ratio(p) == 0.0
+
+
+def test_single_echo():
+    a = 0.3
+    p = np.array([1.0, a])
+    assert np.isclose(peak_distortion(p), a, rtol=0, atol=1e-12)
+    assert np.isclose(isi_power_ratio(p), a**2, rtol=0, atol=1e-12)
+
+
+def test_cursor_is_largest_magnitude_even_if_negative_or_complex():
+    p = np.array([0.2, -1.0, 0.3j])
+    assert np.isclose(peak_distortion(p), 0.5, rtol=0, atol=1e-12)
+    assert np.isclose(isi_power_ratio(p), 0.13, rtol=0, atol=1e-12)
+
+
+def test_isi_metrics_reject_zero_response():
+    with pytest.raises(ValueError):
+        peak_distortion(np.zeros(4))
+    with pytest.raises(ValueError):
+        isi_power_ratio(np.zeros(4))
+
+
+# --------------------------------------------------------------------------
+# symbol_rate_response
+# --------------------------------------------------------------------------
+def test_symbol_rate_response_without_channel():
+    """RRC * RRC (coseno realzado) muestreado en el instante óptimo: cursor 1 y
+    ISI < -40 dB, que es el piso del RRC truncado (roll-off 0.1, span 32)."""
+    p = symbol_rate_response([1.0], sps=2, rolloff=0.1)
+    assert np.isclose(np.max(np.abs(p)), 1.0, rtol=0, atol=1e-12)
+    assert isi_power_ratio(p) < 1e-4
+
+
+def test_symbol_rate_response_with_one_symbol_echo():
+    """Con 2 sps, un eco de un símbolo está 2 taps más adelante: ISI ~ |a|^2."""
+    a = 0.3
+    p = symbol_rate_response([1.0, 0.0, a], sps=2, rolloff=0.1)
+    assert np.isclose(isi_power_ratio(p), a**2, rtol=0, atol=1e-3)
+
+
+def test_symbol_rate_response_sampling_phase():
+    """Un retardo de una muestra (medio símbolo a 2 sps) se corrige con phase=1."""
+    h = [0.0, 1.0]
+    assert isi_power_ratio(symbol_rate_response(h, sps=2, rolloff=0.1, phase=1)) < 1e-4
+    assert isi_power_ratio(symbol_rate_response(h, sps=2, rolloff=0.1, phase=0)) > 0.1
+
+
+def test_symbol_rate_response_rejects_invalid_phase():
+    with pytest.raises(ValueError):
+        symbol_rate_response([1.0], sps=2, rolloff=0.1, phase=2)
