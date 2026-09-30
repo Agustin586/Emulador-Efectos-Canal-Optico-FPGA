@@ -6,8 +6,17 @@ import pytest
 
 from emulador.common import rrc_taps
 from emulador.config import Scenario
-from emulador.metrics import evm_opt
-from emulador.stimuli import comm_signal, map_gray, prbs, shape
+from emulador.metrics import evm_opt, rms_width
+from emulador.stimuli import (
+    centered_time,
+    comm_signal,
+    gaussian_pulse,
+    impulse,
+    map_gray,
+    prbs,
+    shape,
+    tone,
+)
 
 
 # --------------------------------------------------------------------------
@@ -165,3 +174,37 @@ def test_comm_signal_meta():
     assert m["span"] == 64
     assert isinstance(m["version"], str)
     json.dumps(m)  # tiene que poder ir a meta.json
+
+
+# --------------------------------------------------------------------------
+# impulse, gaussian_pulse, tone
+# --------------------------------------------------------------------------
+def test_impulse():
+    x = impulse(16, 5)
+    assert x.dtype == complex
+    assert x[5] == 1 and np.count_nonzero(x) == 1
+
+
+def test_impulse_rejects_bad_position():
+    with pytest.raises(ValueError):
+        impulse(8, 8)
+
+
+def test_gaussian_pulse_centered_and_rms_width():
+    fs = Scenario().fs
+    T0 = 20 / fs
+    n = 1024
+    a = gaussian_pulse(T0, fs, n)
+    t = centered_time(n, fs)
+    assert np.argmax(np.abs(a)) == n // 2 and t[n // 2] == 0
+    assert np.isclose(a[n // 2], 1.0, rtol=0, atol=1e-15)
+    assert np.isclose(rms_width(a, t), T0 / np.sqrt(2), rtol=1e-3, atol=0)
+
+
+@pytest.mark.parametrize("k", [0, 3, 100, -7])
+def test_tone_single_bin(k):
+    n = 256
+    X = np.fft.fft(tone(k, n))
+    others = np.delete(np.abs(X), k % n)
+    assert np.isclose(abs(X[k % n]), n, rtol=1e-12, atol=0)
+    assert np.max(others) / n < 1e-12
