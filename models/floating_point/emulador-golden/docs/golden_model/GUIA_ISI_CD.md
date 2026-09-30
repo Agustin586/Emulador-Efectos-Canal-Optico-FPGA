@@ -751,7 +751,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] P0.d · `pip install -e ".[dev,notebooks]"` + `nbstripout --install` en LENOVO (no requiere commit)
 - [x] P1.1 · `config.py` (`C`, `D_si`, `S_si`, `Scenario`, `HardwareParams`) + `tests/test_config.py`
 - [x] P1.2 · Notebook `00_escenario_y_convenciones` (primera parte)
-- [ ] P2.1 · `metrics.py`: `nrmse`, `group_delay` + tests
+- [x] P2.1 · `metrics.py`: `nrmse`, `group_delay` + tests
 - [ ] P2.2 · `metrics.py`: `evm_opt`, `snr_eq_db`, `rms_width` + tests
 - [ ] P2.3 · `metrics.py`: `peak_distortion`, `isi_power_ratio`, `symbol_rate_response` + tests
 - [ ] P3.1 · `stimuli/prbs.py` (PRBS-15/31) + tests
