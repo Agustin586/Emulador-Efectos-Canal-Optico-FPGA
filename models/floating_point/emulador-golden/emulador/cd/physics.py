@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..config import C
+from ..config import C, HardwareParams
 
 
 def betas(D: float, lam: float, S: float = 0.0) -> tuple[float, float]:
@@ -55,3 +55,52 @@ def cd_transfer(L: int, fs: float, D: float, lam: float, z: float, S: float = 0.
     w = 2 * np.pi * np.fft.fftfreq(L, d=1 / fs)
     b2, b3 = betas(D, lam, S)
     return np.exp(-1j * (b2 / 2 * w**2 + b3 / 6 * w**3) * z)
+
+
+def cd_R(fs: float, D: float, lam: float, z: float) -> int:
+    """Largo del chirp de la CD en muestras (Ref. B.2, PDF Ec. 26).
+
+        R = 2 ⌊|D| λ² z / (2 c Ts²)⌋ + 1
+
+    Es la cantidad de muestras que ocupa la respuesta al impulso dentro de la
+    banda de Nyquist (Savory, 2008). Siempre impar; con z = 0 da 1.
+
+    - fs: frecuencia de muestreo, Sa/s.
+    - D: coeficiente de dispersión cromática, s/m² (se usa |D|).
+    - lam: longitud de onda, m.
+    - z: distancia de propagación, m.
+    - return: R, entero impar >= 1.
+
+    Ejemplo (64 GSa/s, SMF, 1550 nm, 100 km): R = 55.
+    """
+    Ts = 1 / fs
+    return 2 * int(np.floor(abs(D) * lam**2 * z / (2 * C * Ts**2))) + 1
+
+
+def cd_N(
+    fs: float,
+    D: float,
+    lam: float,
+    z: float,
+    N_min: int = 128,
+    N_max: int = HardwareParams().N_max,
+) -> int:
+    """Tamaño de bloque N del overlap-save (decisión 5).
+
+        N = max(N_min, menor potencia de 2 >= R)
+
+    La FFT del overlap-save tiene L = 2N puntos.
+
+    - fs, D, lam, z: como en ``cd_R``.
+    - N_min: N mínimo (potencia de 2).
+    - N_max: N máximo que admite el hardware; por defecto el de
+      ``HardwareParams`` (provisorio).
+    - return: N, potencia de 2.
+
+    Lanza ``ValueError`` si N supera N_max.
+    """
+    R = cd_R(fs, D, lam, z)
+    N = max(N_min, 1 << (R - 1).bit_length())
+    if N > N_max:
+        raise ValueError(f"cd_N: R = {R} requiere N = {N}, mayor que N_max = {N_max}")
+    return N

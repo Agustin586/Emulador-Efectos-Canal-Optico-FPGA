@@ -772,7 +772,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] A1.2 · Bloque `ISI` con taps (`delay_samples`, `process`, `process_hw`, `coefficients`) + tests + `run_block`
 - [x] B1.1 · `cd/physics.py`: `betas`, `cd_transfer` + tests de signo, pasa-todo y composición
 - [x] B1.2 · Tests de pendiente del retardo de grupo y parábola con β₃
-- [ ] B1.3 · `cd_R`, `cd_N` + tests de tabla
+- [x] B1.3 · `cd_R`, `cd_N` + tests de tabla
 - [ ] B1.4 · `savory_taps`, `cd_summary` + tests
 
 *Hito 2 · Perfiles de ISI y referencia ideal de la CD*

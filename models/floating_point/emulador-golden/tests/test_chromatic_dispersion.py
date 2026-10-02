@@ -2,8 +2,8 @@
 import numpy as np
 import pytest
 
-from emulador.cd import betas, cd_transfer
-from emulador.config import C, D_si, S_si
+from emulador.cd import betas, cd_N, cd_R, cd_transfer
+from emulador.config import C, D_si, HardwareParams, S_si
 from emulador.metrics import group_delay
 
 TOL = 1e-12
@@ -105,3 +105,51 @@ def test_group_delay_parabola_with_beta3():
     c2, c1, _ = np.polyfit(2 * np.pi * f[band], tau[band], 2)
     assert c1 == pytest.approx(b2 * z, rel=0.01, abs=0)
     assert c2 == pytest.approx(b3 * z / 2, rel=0.01, abs=0)
+
+
+# --------------------------------------------------------------------------
+# physics: largo del chirp R y tamaño de bloque N (B1.3)
+# --------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    "fs, z_km, R",
+    [
+        (40e9, 10, 3),
+        (40e9, 500, 109),
+        (64e9, 10, 5),
+        (64e9, 100, 55),
+        (64e9, 500, 279),
+        (64e9, 1000, 559),
+        (64e9, 2000, 1117),
+    ],
+)
+def test_cd_R_table(fs, z_km, R):
+    """Ref. B.2 (PDF Ec. 26). Con c = 3e8 en lugar de C exacta, 1000 y 2000 km dan 557 y 1115."""
+    assert cd_R(fs, D, LAM, z_km * KM) == R
+
+
+def test_cd_R_zero_length_and_sign_of_D():
+    assert cd_R(FS, D, LAM, 0.0) == 1
+    assert cd_R(FS, -D, LAM, 500 * KM) == cd_R(FS, D, LAM, 500 * KM)
+
+
+@pytest.mark.parametrize(
+    "z_km, N",
+    [(0, 128), (10, 128), (100, 128), (200, 128), (500, 512), (1000, 1024), (2000, 2048)],
+)
+def test_cd_N_table(z_km, N):
+    """Decisión 5: N = max(128, menor potencia de 2 >= R)."""
+    assert cd_N(FS, D, LAM, z_km * KM) == N
+
+
+def test_cd_N_default_N_max_is_hardware_params():
+    assert cd_N(FS, D, LAM, 2000 * KM) <= HardwareParams().N_max
+
+
+def test_cd_N_exceeds_N_max():
+    with pytest.raises(ValueError):
+        cd_N(FS, D, LAM, 2000 * KM, N_max=1024)
+
+
+def test_cd_N_custom_N_min():
+    assert cd_N(FS, D, LAM, 10 * KM, N_min=16) == 16
+    assert cd_N(FS, D, LAM, 100 * KM, N_min=16) == 64
