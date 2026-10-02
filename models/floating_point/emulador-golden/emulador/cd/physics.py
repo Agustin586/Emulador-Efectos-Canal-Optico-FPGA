@@ -25,6 +25,11 @@ def betas(D: float, lam: float, S: float = 0.0) -> tuple[float, float]:
     Con S = 0 devuelve β₃ = 0 exacto (decisión 4): el modelo queda idéntico al
     de solo β₂, aunque el término 2D/λ no sea nulo.
 
+    - D: coeficiente de dispersión cromática, s/m².
+    - lam: longitud de onda, m.
+    - S: pendiente de dispersión, s/m³.
+    - return: (β₂, β₃) en s²/m y s³/m.
+
     Ejemplo (SMF, 1550 nm, 17 ps/(nm·km)): β₂ ≈ -2.17e-26 s²/m = -21,7 ps²/km.
     """
     k = lam**2 / (2 * np.pi * C)
@@ -35,6 +40,14 @@ def betas(D: float, lam: float, S: float = 0.0) -> tuple[float, float]:
 
 def cd_transfer(L: int, fs: float, D: float, lam: float, z: float, S: float = 0.0) -> np.ndarray:
     """H_CD en la grilla de una FFT de L puntos, en el orden de ``np.fft``.
+
+    - L: largo de la FFT, entero positivo.
+    - fs: frecuencia de muestreo, Sa/s.
+    - D: coeficiente de dispersión cromática, s/m².
+    - lam: longitud de onda, m.
+    - z: distancia de propagación, m.
+    - S: pendiente de dispersión, s/m³.
+    - return: array de forma (L,) con H_CD(ω) en la grilla de la FFT, orden de ``np.fft``. 
 
     ω = 2π · fftfreq(L, 1/fs). |H| = 1 (pasa-todo), H(z₁)·H(z₂) = H(z₁ + z₂) y
     H⁻¹ = H*. Con z = 0 da unos exactos.
