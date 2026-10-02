@@ -27,6 +27,10 @@ def isi_apply(x: np.ndarray, h) -> np.ndarray:
 
     Igual a ``np.convolve(x, h)[:n]`` fila por fila. No usar
     ``np.convolve(..., "same")``: centra el filtro y rompe la causalidad.
+
+    - x: array de forma (..., n), con n arbitrario.
+    - h: taps del FIR, array 1-D de largo K.
+    - return: array de salida, misma forma que x.
     """
     return lfilter(_taps(h), 1.0, np.asarray(x, dtype=complex), axis=-1)
 
@@ -40,12 +44,17 @@ def isi_apply_stream(chunks: Iterable[np.ndarray], h) -> list[np.ndarray]:
     la señal completa. Los bloques pueden tener largos distintos (incluso
     menores que K-1, o vacíos); todos tienen que compartir las dimensiones
     previas al último eje.
+
+    - chunks: iterable de arrays de forma (..., n_i), con n_i arbitrario.
+    - h: taps del FIR, array 1-D de largo K.
+    - return: lista de arrays de salida, cada uno con la misma forma que el
+      correspondiente bloque de entrada.
     """
     h = _taps(h)
     out = []
     zi = None
     for x in chunks:
-        x = np.asarray(x, dtype=complex)
+        x = np.asarray(x, dtype=complex) # asegura que sea array y tipo complejo
         if zi is None:
             zi = np.zeros(x.shape[:-1] + (h.size - 1,), dtype=complex)
         if x.shape[-1] == 0:  # lfilter no acepta entradas vacías
