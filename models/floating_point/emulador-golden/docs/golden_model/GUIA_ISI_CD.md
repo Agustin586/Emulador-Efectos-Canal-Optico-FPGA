@@ -768,7 +768,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 **Partes A y B, intercaladas** (decisión 17 de §1: A = ISI, B = CD)
 
 *Hito 1 · Bloque ISI con taps y física de la CD*
-- [ ] A1.1 · `isi/fir.py` (`isi_apply`, `isi_apply_stream`) + tests
+- [x] A1.1 · `isi/fir.py` (`isi_apply`, `isi_apply_stream`) + tests
 - [ ] A1.2 · Bloque `ISI` con taps (`delay_samples`, `process`, `process_hw`, `coefficients`) + tests + `run_block`
 - [ ] B1.1 · `cd/physics.py`: `betas`, `cd_transfer` + tests de signo, pasa-todo y composición
 - [ ] B1.2 · Tests de pendiente del retardo de grupo y parábola con β₃
