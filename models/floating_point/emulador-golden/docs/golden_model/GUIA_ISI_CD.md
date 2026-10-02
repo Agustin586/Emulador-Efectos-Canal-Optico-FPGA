@@ -35,6 +35,7 @@ Esta tabla es el **único registro de decisiones**:
 | 14 | Punto fijo | Modelo bit a bit en `models/fixed_point/emulador-real/`; en el golden solo utilidades y exploración | **sin confirmar** |
 | 15 | RRC de los estímulos y del receptor | span = 64 símbolos por defecto (`shape`, `comm_signal`, `matched_filter`). Piso de EVM back-to-back medido en P3.3 con roll-off 0,1 y 2 sps: span 32 → 0,58 %, 48 → 0,27 %, **64 → 0,12 %**, 96 → 0,04 %. Criterio back-to-back: EVM < 0,5 % | aceptada |
 | 16 | Convención de la PRBS | LFSR de Fibonacci según ITU-T O.150 (x<sup>m</sup> + x<sup>k</sup> + 1): b[n] = b[n−m] ⊕ b[n−k]. Los primeros m bits de salida son la semilla, del MSB al LSB. Sin inversión por defecto; `invert=True` da la salida invertida que O.150 pide para PRBS-15/23/31. El generador del RTL tiene que usar la misma convención | aceptada |
+| 17 | Orden de trabajo de ISI y CD | **Intercalado por paso**, para presentar avances de los dos efectos: A1 → B1 → A2 → B2 → A3 → A4 → B3 → A5 → B4, agrupados en 4 hitos (checklist de §4). Se respetan las dependencias de cada paso | aceptada |
 
 ---
 
@@ -151,7 +152,7 @@ Cada paso tiene los mismos apartados:
 | Verificar | Comandos para comprobarlo |
 | Listo cuando | Condición de cierre |
 
-Esfuerzo: **S** (≤ medio día), **M** (1 a 2 días), **L** (≥ 3 días). Una vez terminada la base común, las partes A y B son independientes, salvo A4, que usa una función de B1.
+Esfuerzo: **S** (≤ medio día), **M** (1 a 2 días), **L** (≥ 3 días). Una vez terminada la base común, las partes A y B son independientes, salvo A4, que usa una función de B1. Se avanzan intercaladas, en el orden de §4 (decisión 17).
 
 Comandos habituales, desde `models/floating_point/emulador-golden/` y con el venv activo (`. .venv/bin/activate`):
 
@@ -764,29 +765,35 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] P4.2 · `plots.py` + `style.mplstyle`
 - [x] P4.3 · Notebook `01_estimulos`
 
-**Parte A · ISI**
+**Partes A y B, intercaladas** (decisión 17 de §1: A = ISI, B = CD)
+
+*Hito 1 · Bloque ISI con taps y física de la CD*
 - [ ] A1.1 · `isi/fir.py` (`isi_apply`, `isi_apply_stream`) + tests
 - [ ] A1.2 · Bloque `ISI` con taps (`delay_samples`, `process`, `process_hw`, `coefficients`) + tests + `run_block`
-- [ ] A2.1 · `isi/profiles.py`: `normalize_energy`, `echo`, `K_rule` + tests
-- [ ] A2.2 · `isi/profiles.py`: `gaussian`, `energy_captured` + tests
-- [ ] A2.3 · `isi/profiles.py`: `measured`; perfiles echo/gaussian/measured en el bloque + tests
-- [ ] A3.1 · `isi/profiles.py`: `analog` (Bessel/Butterworth) + tests de −3 dB y energía
-- [ ] A3.2 · Tests de fidelidad contra el prototipo analógico
-- [ ] A3.3 · Perfiles bessel/butter en el bloque + regresión del perfil principal (`tests/data/`)
-- [ ] A4.1 · Perfil `cd_short` (requiere B1.4) + tests
-- [ ] A5.1 · Test de SNR equivalente contra la Tabla 4 del PDF
-- [ ] A5.2 · Notebook `02_isi_generica`
-
-**Parte B · CD**
 - [ ] B1.1 · `cd/physics.py`: `betas`, `cd_transfer` + tests de signo, pasa-todo y composición
 - [ ] B1.2 · Tests de pendiente del retardo de grupo y parábola con β₃
 - [ ] B1.3 · `cd_R`, `cd_N` + tests de tabla
 - [ ] B1.4 · `savory_taps`, `cd_summary` + tests
+
+*Hito 2 · Perfiles de ISI y referencia ideal de la CD*
+- [ ] A2.1 · `isi/profiles.py`: `normalize_energy`, `echo`, `K_rule` + tests
+- [ ] A2.2 · `isi/profiles.py`: `gaussian`, `energy_captured` + tests
+- [ ] A2.3 · `isi/profiles.py`: `measured`; perfiles echo/gaussian/measured en el bloque + tests
 - [ ] B2.1 · `cd/reference.py` + tests de identidad, energía y reversibilidad
 - [ ] B2.2 · Test del pulso gaussiano
 - [ ] B2.3 · Notebook `03_cd_modelo_fisico`
+
+*Hito 3 · Perfiles analógicos, CD corta y bloque `ChromaticDispersion`*
+- [ ] A3.1 · `isi/profiles.py`: `analog` (Bessel/Butterworth) + tests de −3 dB y energía
+- [ ] A3.2 · Tests de fidelidad contra el prototipo analógico
+- [ ] A3.3 · Perfiles bessel/butter en el bloque + regresión del perfil principal (`tests/data/`)
+- [ ] A4.1 · Perfil `cd_short` (requiere B1.4) + tests
 - [ ] B3.1 · `cd/overlap_save.py` (`cd_hbar`, `cd_overlap_save`) + test contra la referencia
 - [ ] B3.2 · Bloque `ChromaticDispersion` (docstring corregido, `fs=64e9`) + tests + `run_block`
+
+*Hito 4 · Caracterización de la ISI y alcance del overlap-save*
+- [ ] A5.1 · Test de SNR equivalente contra la Tabla 4 del PDF
+- [ ] A5.2 · Notebook `02_isi_generica`
 - [ ] B4.1 · Tests del residuo de β₃ (Tabla 17 del PDF)
 - [ ] B4.2 · Notebook `04_cd_overlap_save` (Figs. 9 y 10, hardware)
 
