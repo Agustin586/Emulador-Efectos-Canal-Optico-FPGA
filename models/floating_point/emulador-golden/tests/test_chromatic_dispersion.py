@@ -2,8 +2,8 @@
 import numpy as np
 import pytest
 
-from emulador.cd import betas, cd_N, cd_R, cd_transfer
-from emulador.config import C, D_si, HardwareParams, S_si
+from emulador.cd import betas, cd_N, cd_R, cd_summary, cd_transfer, savory_taps
+from emulador.config import C, D_si, HardwareParams, S_si, Scenario
 from emulador.metrics import group_delay
 
 TOL = 1e-12
@@ -153,3 +153,91 @@ def test_cd_N_exceeds_N_max():
 def test_cd_N_custom_N_min():
     assert cd_N(FS, D, LAM, 10 * KM, N_min=16) == 16
     assert cd_N(FS, D, LAM, 100 * KM, N_min=16) == 64
+
+
+# --------------------------------------------------------------------------
+# physics: taps de Savory y resumen (B1.4)
+# --------------------------------------------------------------------------
+def _fir_phase_curvature(h, band_frac=0.25, L=8192):
+    """Curvatura (coef. de f²) de la fase de la respuesta del FIR centrado en n = 0."""
+    R = h.size
+    H = np.fft.fft(np.roll(np.pad(h, (0, L - R)), -(R // 2)))
+    f = np.fft.fftshift(np.fft.fftfreq(L, 1 / FS))
+    H = np.fft.fftshift(H)
+    band = np.abs(f) < band_frac * FS
+    return np.polyfit(f[band], np.unwrap(np.angle(H[band])), 2)[0]
+
+
+def test_savory_length_is_R():
+    for z_km in (10, 100, 500):
+        assert savory_taps(FS, D, LAM, z_km * KM).size == cd_R(FS, D, LAM, z_km * KM)
+    assert savory_taps(FS, D, LAM, 10 * KM).size == 5
+
+
+def test_savory_constant_magnitude():
+    z = 100 * KM
+    h = savory_taps(FS, D, LAM, z)
+    expected = np.sqrt(C / (D * LAM**2 * z)) / FS  # sqrt(c Ts² / (D λ² z))
+    assert np.max(np.abs(np.abs(h) - expected)) < TOL
+
+
+def test_savory_quadratic_phase():
+    h = savory_taps(FS, D, LAM, 100 * KM)
+    n = np.arange(h.size) - h.size // 2
+    phase = np.unwrap(np.angle(h))
+    resid = phase - np.polyval(np.polyfit(n, phase, 2), n)
+    assert np.max(np.abs(resid)) < 1e-10
+
+
+@pytest.mark.parametrize("z_km", [10, 100])
+def test_savory_sign_matches_cd_transfer(z_km):
+    """Los taps emulan el canal (no lo compensan): misma curvatura de fase que H_CD."""
+    z = z_km * KM
+    curv = _fir_phase_curvature(savory_taps(FS, D, LAM, z))
+    expected = np.pi * D * LAM**2 * z / C
+    assert np.sign(curv) == np.sign(expected)
+    if z_km >= 100:  # con pocos taps la truncación deforma la fase
+        assert curv == pytest.approx(expected, rel=0.01, abs=0)
+
+
+def test_savory_negative_D_is_conjugate():
+    z = 50 * KM
+    assert np.max(np.abs(savory_taps(FS, -D, LAM, z) - np.conj(savory_taps(FS, D, LAM, z)))) < TOL
+
+
+def test_savory_no_dispersion_is_identity():
+    assert np.array_equal(savory_taps(FS, D, LAM, 0.0), np.array([1.0 + 0j]))
+    assert np.array_equal(savory_taps(FS, 0.0, LAM, 100 * KM), np.array([1.0 + 0j]))
+
+
+def test_cd_summary_table_15():
+    """PDF Tabla 15: SSMF, 100 km, 64 GSa/s (32 GBd, 2 sps)."""
+    s = cd_summary(Scenario(), D, 100 * KM, S)
+    assert s["beta2_ps2_km"] == pytest.approx(-21.7, rel=0.01)
+    assert s["beta3_ps3_km"] == pytest.approx(0.13, rel=0.03)
+    assert s["gd_slope_ps_GHz"] == pytest.approx(-13.6, rel=0.01)
+    assert s["R"] == 55
+    assert s["N"] == 128
+    assert s["L_D_km"] == pytest.approx(45, rel=0.01)
+    assert s["Dz_ps_nm"] == pytest.approx(1700)
+
+
+def test_cd_summary_S0_and_worst_case():
+    s = cd_summary(Scenario(), D, 100 * KM)
+    assert s["beta3_ps3_km"] == 0.0
+    # PDF Tabla 14, peor caso: D = 23 ps/(nm·km), 2000 km, 64 GSa/s -> R = 1509, N = 2048
+    s = cd_summary(Scenario(), D_si(23.0), 2000 * KM)
+    assert (s["R"], s["N"]) == (1509, 2048)
+    assert s["N_fits_hw"] is True
+
+
+def test_cd_summary_N_beyond_hw():
+    s = cd_summary(Scenario(), D, 4000 * KM)
+    assert s["N"] == 4096
+    assert s["N_fits_hw"] is False
+
+
+def test_cd_summary_no_dispersion():
+    s = cd_summary(Scenario(), 0.0, 100 * KM)
+    assert s["R"] == 1
+    assert s["L_D_km"] == np.inf
