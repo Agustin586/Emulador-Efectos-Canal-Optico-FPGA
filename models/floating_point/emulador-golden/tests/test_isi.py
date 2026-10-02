@@ -2,6 +2,7 @@
 import numpy as np
 import pytest
 
+from emulador.blocks import ISI
 from emulador.isi import isi_apply, isi_apply_stream
 from emulador.stimuli import impulse
 
@@ -72,3 +73,71 @@ def test_stream_equals_full(K, shape):
 def test_rejects_empty_taps():
     with pytest.raises(ValueError):
         isi_apply(np.ones(4, complex), np.array([]))
+
+
+# --------------------------------------------------------------------------
+# Bloque ISI con taps (A1.2)
+# --------------------------------------------------------------------------
+def test_block_default_is_bypass():
+    x = _crandn(np.random.default_rng(3), 256)
+    blk = ISI()
+    assert np.array_equal(blk(x), x)
+    assert np.array_equal(blk.process_hw(x), x)
+    assert blk.delay_samples == 0
+
+
+def test_block_impulse_hw_gives_taps():
+    h = _crandn(np.random.default_rng(4), 9)
+    y = ISI(taps=h).process_hw(impulse(30))
+    assert np.array_equal(y[:9], h)
+
+
+def test_block_delay_and_alignment():
+    h = np.array([0.1, 0.2, 1.0, 0.3])
+    blk = ISI(taps=h)
+    assert blk.delay_samples == 2
+    x = _crandn(np.random.default_rng(5), 200)
+    y, y_hw = blk(x), blk.process_hw(x)
+    assert y.shape == y_hw.shape == x.shape
+    assert np.array_equal(y[:-2], y_hw[2:])
+    # la cola alineada sale de seguir filtrando con ceros a la entrada
+    assert np.array_equal(y[-2:], isi_apply(np.concatenate([x, np.zeros(2)]), h)[-2:])
+
+
+def test_block_impulse_aligned_puts_cursor_at_zero():
+    h = np.array([0.1, 0.2, 1.0, 0.3])
+    y = ISI(taps=h)(impulse(10, 5))
+    assert np.array_equal(y[3:7], h)  # el cursor (k0 = 2) cae en la posición 5
+
+
+def test_block_two_polarizations():
+    rng = np.random.default_rng(6)
+    blk = ISI(taps=_crandn(rng, 16))
+    x = _crandn(rng, 2, 300)
+    y, y_hw = blk(x), blk.process_hw(x)
+    for p in range(2):
+        assert np.array_equal(y[p], blk(x[p]))
+        assert np.array_equal(y_hw[p], blk.process_hw(x[p]))
+
+
+def test_block_coefficients():
+    h = [1, 0.3j]
+    c = ISI(taps=h).coefficients()
+    assert set(c) == {"h"}
+    assert c["h"].dtype == complex
+    assert np.array_equal(c["h"], np.array(h, dtype=complex))
+
+
+@pytest.mark.parametrize("taps", [np.ones(33), np.array([]), np.ones((2, 4))])
+def test_block_rejects_invalid_taps(taps):
+    with pytest.raises(ValueError):
+        ISI(taps=taps)
+
+
+def test_block_accepts_K32():
+    assert ISI(taps=np.ones(32)).coefficients()["h"].size == 32
+
+
+def test_block_rejects_unknown_profile():
+    with pytest.raises(ValueError):
+        ISI(profile="nope")
