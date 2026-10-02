@@ -4,6 +4,7 @@ import pytest
 
 from emulador.cd import betas, cd_transfer
 from emulador.config import C, D_si, S_si
+from emulador.metrics import group_delay
 
 TOL = 1e-12
 FS = 64e9
@@ -67,3 +68,40 @@ def test_cd_transfer_composition(S_):
 
 def test_cd_transfer_zero_length_is_identity():
     assert np.array_equal(cd_transfer(512, FS, D, LAM, 0.0, S=S), np.ones(512, complex))
+
+
+# --------------------------------------------------------------------------
+# physics: retardo de grupo (B1.2)
+# --------------------------------------------------------------------------
+@pytest.mark.parametrize("z_km", [10, 100, 1000])
+def test_group_delay_slope(z_km):
+    """τ(f) = -(D λ² z / c)·f con β₃ = 0. Detecta el factor ½ y el signo invertido."""
+    z = z_km * KM
+    f, tau = group_delay(cd_transfer(8192, FS, D, LAM, z), FS)
+    band = np.abs(f) < FS / 4  # los bordes tienen error numérico del gradiente
+    slope, _ = np.polyfit(f[band], tau[band], 1)
+    expected = -D * LAM**2 * z / C
+    assert slope == pytest.approx(expected, rel=1e-3, abs=0)
+
+
+def test_group_delay_slope_value_100km():
+    """Valor de referencia: SSMF, 100 km, 1550 nm -> -13,6 ps/GHz."""
+    f, tau = group_delay(cd_transfer(8192, FS, D, LAM, 100 * KM), FS)
+    band = np.abs(f) < FS / 4
+    slope, _ = np.polyfit(f[band], tau[band], 1)
+    assert slope / (1e-12 / 1e9) == pytest.approx(-13.6, rel=0.01)
+
+
+def test_group_delay_parabola_with_beta3():
+    """Con β₃: τ(ω) = β₂ z ω + (β₃ z / 2) ω².
+
+    ``abs=0`` en los approx: los coeficientes en SI son ~1e-20 y ~1e-35, muy por
+    debajo de la tolerancia absoluta por defecto de pytest (1e-12).
+    """
+    z = 1000 * KM
+    b2, b3 = betas(D, LAM, S)
+    f, tau = group_delay(cd_transfer(8192, FS, D, LAM, z, S=S), FS)
+    band = np.abs(f) < FS / 4
+    c2, c1, _ = np.polyfit(2 * np.pi * f[band], tau[band], 2)
+    assert c1 == pytest.approx(b2 * z, rel=0.01, abs=0)
+    assert c2 == pytest.approx(b3 * z / 2, rel=0.01, abs=0)
