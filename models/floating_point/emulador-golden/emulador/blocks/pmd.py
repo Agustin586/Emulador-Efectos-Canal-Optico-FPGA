@@ -1,4 +1,4 @@
-"""Bloque 04 - PMD, dispersión por modo de polarización (Nivel 3)  [PENDIENTE]
+"""Bloque 04 - PMD, dispersión por modo de polarización (Nivel 3)  [EN CURSO]
 
 En simple: la fibra no es perfectamente simétrica, así que las dos polarizaciones
 de la luz viajan a velocidades apenas distintas y se mezclan entre sí. Se modela
@@ -19,8 +19,10 @@ Parámetros:
   dgd_ps     : DGD por sección, en ps. Por defecto 0 (sin efecto).
   seed       : semilla para los ángulos aleatorios de cada sección.
 
+Estado: una sección (paso 2). La física está en ``emulador/pmd/physics.py``.
+
 TODO:
-  - Implementar ``process`` aplicando J_total(w) en frecuencia (FFT por polarización).
+  - Cascada de ``n_sections`` secciones con ángulos aleatorios (paso 3).
   - Verificar que con ángulos aleatorios el DGD total sigue una distribución
     Maxwelliana (simular muchas realizaciones y comparar el histograma).
 """
@@ -31,6 +33,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from ..common import Block
+from ..pmd import pmd_section
 
 
 @dataclass
@@ -44,19 +47,17 @@ class PMD(Block):
     def process(self, x: np.ndarray) -> np.ndarray:
         """Procesa la señal de entrada x (2, n) y devuelve la salida (2, n).
 
+        Por ahora aplica UNA sección, con un ángulo theta sorteado con ``seed``
+        (paso 2). La cascada de ``n_sections`` secciones es el paso 3.
+
         Args:
             x: Señal de entrada, forma (2, n), filas X e Y.
 
         Returns:
             Señal de salida, forma (2, n), filas X e Y.
         """
-
-        tao = self.dgd_ps * 1e-12  # DGD por sección en segundos
-        n = x.shape[-1]
-        w = 2 * np.pi * np.fft.fftfreq(n, 1 / self.fs)  # vector de frecuencias
-        X = np.fft.fft(x, axis=-1)  # FFT por polarización
-        H = np.stack([np.exp(+1j * w * tao / 2),      # X: se adelanta tao/2
-                      np.exp(-1j * w * tao / 2)])     # Y: se atrasa tao/2
-        return np.fft.ifft(H * X, axis=-1)
-
-        
+        if x.ndim != 2 or x.shape[0] != 2:
+            raise ValueError(f"pmd: la entrada tiene que tener forma (2, n): forma {x.shape}")
+        tau = self.dgd_ps * 1e-12  # DGD por sección en segundos
+        theta = np.random.default_rng(self.seed).uniform(0, 2 * np.pi)
+        return pmd_section(x, self.fs, tau, theta)
