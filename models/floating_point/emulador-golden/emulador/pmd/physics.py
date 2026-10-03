@@ -18,6 +18,10 @@ def rotation(theta: float) -> np.ndarray:
 
     - theta: ángulo de rotación, en radianes.
     - return: array (2, 2).
+
+    y_X = cos θ · x_X  −  sin θ · x_Y
+    y_Y = sin θ · x_X  +  cos θ · x_Y
+
     """
     c, s = np.cos(theta), np.sin(theta)
     return np.array([[c, -s], [s, c]])

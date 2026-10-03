@@ -58,6 +58,14 @@ class PMD(Block):
         """
         if x.ndim != 2 or x.shape[0] != 2:
             raise ValueError(f"pmd: la entrada tiene que tener forma (2, n): forma {x.shape}")
+        
+
         tau = self.dgd_ps * 1e-12  # DGD por sección en segundos
-        theta = np.random.default_rng(self.seed).uniform(0, 2 * np.pi)
-        return pmd_section(x, self.fs, tau, theta)
+    
+
+        for i in range (self.n_sections):
+            theta = np.random.default_rng(self.seed + i).uniform(0, 2 * np.pi)
+            x = pmd_section(x, self.fs, tau, theta)
+            print(f"Sección {i+1}/{self.n_sections}: tau={tau*1e12:.2f} ps, theta={theta:.2f} rad")
+
+        return x
