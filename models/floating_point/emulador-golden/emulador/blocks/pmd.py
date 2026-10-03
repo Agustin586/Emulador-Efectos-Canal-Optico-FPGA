@@ -61,10 +61,10 @@ class PMD(Block):
         
 
         tau = self.dgd_ps * 1e-12  # DGD por sección en segundos
-    
+        # Un solo generador para los K ángulos: semillas distintas dan fibras independientes
+        thetas = np.random.default_rng(self.seed).uniform(0, 2 * np.pi, self.n_sections)
 
-        for i in range (self.n_sections):
-            theta = np.random.default_rng(self.seed + i).uniform(0, 2 * np.pi)
+        for i, theta in enumerate(thetas):
             x = pmd_section(x, self.fs, tau, theta)
             print(f"Sección {i+1}/{self.n_sections}: tau={tau*1e12:.2f} ps, theta={theta:.2f} rad")
 
