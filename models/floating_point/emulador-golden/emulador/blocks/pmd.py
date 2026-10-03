@@ -47,9 +47,6 @@ class PMD(Block):
     def process(self, x: np.ndarray) -> np.ndarray:
         """Procesa la señal de entrada x (2, n) y devuelve la salida (2, n).
 
-        Por ahora aplica UNA sección, con un ángulo theta sorteado con ``seed``
-        (paso 2). La cascada de ``n_sections`` secciones es el paso 3.
-
         Args:
             x: Señal de entrada, forma (2, n), filas X e Y.
 

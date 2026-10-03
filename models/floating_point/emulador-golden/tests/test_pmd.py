@@ -81,6 +81,43 @@ def test_con_ejes_girados_hay_mezcla_entre_polarizaciones():
 
 
 # --------------------------------------------------------------------------
+# Paso 3: cascada de K secciones
+# --------------------------------------------------------------------------
+def _thetas(seed, k):
+    """Los mismos ángulos que sortea el bloque PMD con esa semilla."""
+    return np.random.default_rng(seed).uniform(0, 2 * np.pi, k)
+
+
+def test_cascada_conserva_la_potencia_total():
+    """Cada sección es unitaria, así que la cascada también."""
+    x = _dual_pol()
+    y = PMD(fs=FS, dgd_ps=10, n_sections=10, seed=0)(x)
+    assert np.isclose(_power(y), _power(x))
+
+
+def test_cascada_de_una_seccion_es_pmd_section():
+    """Con n_sections=1 el bloque aplica una sola sección con el primer ángulo."""
+    x = _dual_pol()
+    y = PMD(fs=FS, dgd_ps=10, n_sections=1, seed=5)(x)
+    theta = _thetas(seed=5, k=1)[0]
+    assert np.allclose(y, pmd_section(x, FS, TAU, theta))
+
+
+def test_cascada_se_deshace_aplicando_la_inversa():
+    """J_total^H deshace el PMD: secciones en orden inverso y con -tau.
+
+    La inversa de una sección R @ D(tau) @ R^H es R @ D(-tau) @ R^H, y la de
+    J_K @ ... @ J_1 es J_1^H @ ... @ J_K^H (orden inverso).
+    """
+    x = _dual_pol()
+    k, seed = 10, 7
+    y = PMD(fs=FS, dgd_ps=10, n_sections=k, seed=seed)(x)
+    for theta in _thetas(seed, k)[::-1]:
+        y = pmd_section(y, FS, -TAU, theta)
+    assert np.allclose(y, x)
+
+
+# --------------------------------------------------------------------------
 # Bloque
 # --------------------------------------------------------------------------
 def test_bloque_misma_semilla_mismo_resultado():
