@@ -35,11 +35,28 @@ from ..common import Block
 
 @dataclass
 class PMD(Block):
-    fs: float = 2.0e9
+    fs: float = 64e9
     n_sections: int = 10
     dgd_ps: float = 0.0
     seed: int = 0
     name = "pmd"
 
     def process(self, x: np.ndarray) -> np.ndarray:
-        raise NotImplementedError("PMD: pendiente de implementar")
+        """Procesa la señal de entrada x (2, n) y devuelve la salida (2, n).
+
+        Args:
+            x: Señal de entrada, forma (2, n), filas X e Y.
+
+        Returns:
+            Señal de salida, forma (2, n), filas X e Y.
+        """
+
+        tao = self.dgd_ps * 1e-12  # DGD por sección en segundos
+        n = x.shape[-1]
+        w = 2 * np.pi * np.fft.fftfreq(n, 1 / self.fs)  # vector de frecuencias
+        X = np.fft.fft(x, axis=-1)  # FFT por polarización
+        H = np.stack([np.exp(+1j * w * tao / 2),      # X: se adelanta tao/2
+                      np.exp(-1j * w * tao / 2)])     # Y: se atrasa tao/2
+        return np.fft.ifft(H * X, axis=-1)
+
+        
