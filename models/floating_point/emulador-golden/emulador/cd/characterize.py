@@ -4,8 +4,18 @@ Residuo de β₃: el compensador de dispersión (tesis de CDC) suele invertir so
 β₂. Lo que sobrevive es el término de β₃, como ISI residual que tiene que
 absorber el ecualizador adaptativo. Se usa la referencia ideal y no el
 overlap-save, porque a 200 GBd y 1000 km R ≈ 22 000 muestras.
+
+Temporización (decisión 23): β₃ agrega un retardo global con parte fraccionaria
+(τ(ω) = β₃ z ω²/2 tiene media no nula). Un receptor a 2 sps que solo elige
+fases enteras ("grid") lo mezcla con la ISI residual; es como está calculada
+la Tabla 17 del PDF. Con "ideal" se busca además el retardo fraccionario
+continuo que minimiza la EVM (lo que haría una recuperación de temporización
+perfecta) y queda solo la ISI de β₃.
 """
 from __future__ import annotations
+
+import numpy as np
+from scipy.optimize import minimize_scalar
 
 from ..config import Scenario
 from ..rx import RxResult, recover
@@ -21,6 +31,7 @@ def beta3_residual(
     n_symbols: int = 4096,
     seed: int = 1,
     mod: str = "qam16",
+    timing: str = "grid",
 ) -> RxResult:
     """ISI residual tras compensar solo β₂: canal (D, S) y compensación (-D, S = 0).
 
@@ -30,6 +41,8 @@ def beta3_residual(
     - S: pendiente de dispersión del canal, s/m³ (con S = 0 es el control: solo
       queda el piso del RRC).
     - n_symbols, seed, mod: estímulo (``comm_signal``).
+    - timing: "grid" (fases enteras de ``rx.recover``, como la Tabla 17) o
+      "ideal" (además, el mejor retardo fraccionario en [-1, 1] muestras).
     - return: ``rx.recover`` (fase de muestreo, retardo entero y ganancia
       compleja óptimos; EVM con ``evm_opt``, que no supera 100 %).
 
@@ -42,4 +55,25 @@ def beta3_residual(
     y = cd_reference(x, esc.fs, D, lam, z, S=S, full=True)
     back = cd_reference(y, esc.fs, -D, lam, z, S=0.0, full=True)
     off = cd_reference_pad(esc.fs, D, lam, z) + cd_reference_pad(esc.fs, -D, lam, z)
-    return recover(back[off : off + x.size], sig)
+    rx = back[off : off + x.size]
+    if timing == "grid":
+        return recover(rx, sig)
+    if timing != "ideal":
+        raise ValueError(f'beta3_residual: timing tiene que ser "grid" o "ideal": {timing!r}')
+    return _recover_ideal_timing(rx, sig)
+
+
+def _recover_ideal_timing(rx: np.ndarray, sig) -> RxResult:
+    """``recover`` después del retardo fraccionario (en muestras) de menor EVM."""
+    X = np.fft.fft(rx)
+    f = np.fft.fftfreq(rx.size)  # ciclos por muestra
+
+    def at(tau: float) -> RxResult:
+        return recover(np.fft.ifft(X * np.exp(2j * np.pi * f * tau)), sig)
+
+    taus = np.linspace(-1.0, 1.0, 41)
+    evms = [at(t).evm for t in taus]
+    i = int(np.argmin(evms))
+    lo, hi = taus[max(i - 1, 0)], taus[min(i + 1, taus.size - 1)]
+    fine = minimize_scalar(lambda t: at(t).evm, bounds=(lo, hi), method="bounded", options={"xatol": 1e-3})
+    return at(fine.x) if fine.fun < evms[i] else at(taus[i])
