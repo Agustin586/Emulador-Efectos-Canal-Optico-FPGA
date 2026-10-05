@@ -781,7 +781,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] A2.2 · `isi/profiles.py`: `gaussian`, `energy_captured` + tests
 - [x] A2.3 · `isi/profiles.py`: `measured`; perfiles echo/gaussian/measured en el bloque + tests
 - [x] B2.1 · `cd/reference.py` + tests de identidad, energía y reversibilidad
-- [ ] B2.2 · Test del pulso gaussiano
+- [x] B2.2 · Test del pulso gaussiano
 - [ ] B2.3 · Notebook `03_cd_modelo_fisico`
 
 *Hito 3 · Perfiles analógicos, CD corta y bloque `ChromaticDispersion`*

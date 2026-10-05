@@ -13,8 +13,8 @@ from emulador.cd import (
     savory_taps,
 )
 from emulador.config import C, D_si, HardwareParams, S_si, Scenario
-from emulador.metrics import group_delay, nrmse
-from emulador.stimuli import comm_signal, impulse
+from emulador.metrics import group_delay, nrmse, rms_width
+from emulador.stimuli import centered_time, comm_signal, gaussian_pulse, impulse
 
 TOL = 1e-12
 FS = 64e9
@@ -320,3 +320,24 @@ def test_reference_two_polarizations():
         assert y.shape[0] == 2
         for p in range(2):
             assert np.max(np.abs(y[p] - cd_reference(x[p], FS, D, LAM, 100 * KM, S=S, full=full))) < 1e-12
+
+
+# --------------------------------------------------------------------------
+# reference: ensanchamiento del pulso gaussiano (B2.2)
+# --------------------------------------------------------------------------
+@pytest.mark.parametrize("z_km", [25, 50, 75, 100])
+def test_reference_gaussian_pulse_broadening(z_km):
+    """PDF Ec. 22-23: T(z)/T0 = sqrt(1 + (z/L_D)²), L_D = T0²/|β₂| (11,2 km).
+
+    fs = 256 GSa/s (T0 = 4·Ts, sin aliasing) y n = 4096 muestras (16 ns): a
+    100 km el pulso llega a ~9·T0 y queda dentro de la ventana.
+    """
+    T0, fs, n, z = 15.6e-12, 256e9, 4096, z_km * KM
+    b2, _ = betas(D, LAM)
+    L_D = T0**2 / abs(b2)
+    assert L_D / KM == pytest.approx(11.2, rel=0.01)
+    t = centered_time(n, fs)
+    a0 = gaussian_pulse(T0, fs, n)
+    az = cd_reference(a0, fs, D, LAM, z)
+    ratio = rms_width(az, t) / rms_width(a0, t)
+    assert ratio == pytest.approx(np.sqrt(1 + (z / L_D) ** 2), rel=0.01)
