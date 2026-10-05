@@ -30,8 +30,8 @@ import numpy as np
 
 from ..common import Block
 from ..isi import isi_apply
+from ..isi.profiles import K_MAX
 
-K_MAX = 32  # taps del FIR en hardware (decisión 6)
 PROFILES = ("taps",)
 
 

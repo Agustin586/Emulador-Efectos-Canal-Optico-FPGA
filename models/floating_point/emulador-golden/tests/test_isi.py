@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from emulador.blocks import ISI
-from emulador.isi import isi_apply, isi_apply_stream
+from emulador.isi import K_rule, echo, isi_apply, isi_apply_stream, normalize_energy
 from emulador.stimuli import impulse
 
 TOL = 1e-12
@@ -141,3 +141,67 @@ def test_block_accepts_K32():
 def test_block_rejects_unknown_profile():
     with pytest.raises(ValueError):
         ISI(profile="nope")
+
+
+# --------------------------------------------------------------------------
+# profiles: normalize_energy, echo, K_rule (A2.1)
+# --------------------------------------------------------------------------
+def test_normalize_energy():
+    rng = np.random.default_rng(7)
+    for h in (_crandn(rng, 16), rng.standard_normal(5), np.array([3.0])):
+        g = normalize_energy(h)
+        assert abs(np.sum(np.abs(g) ** 2) - 1) < TOL
+        # solo cambia la escala (PDF Ec. 9)
+        assert np.max(np.abs(g * np.sqrt(np.sum(np.abs(h) ** 2)) - h)) < TOL
+
+
+def test_normalize_energy_rejects_zero():
+    with pytest.raises(ValueError):
+        normalize_energy(np.zeros(4))
+
+
+def test_echo_example():
+    """echo([(2, 0.5)]): antes de normalizar, h = [1, 0, 0.5]."""
+    h = echo([(2, 0.5)])
+    assert np.max(np.abs(h - normalize_energy(np.array([1, 0, 0.5])))) < TOL
+    assert abs(np.sum(np.abs(h) ** 2) - 1) < TOL
+
+
+def test_echo_several_complex_and_K():
+    h = echo([(1, 0.2j), (4, -0.1)], K=8)
+    raw = np.array([1, 0.2j, 0, 0, -0.1, 0, 0, 0])
+    assert h.size == 8
+    assert np.max(np.abs(h - normalize_energy(raw))) < TOL
+    assert int(np.argmax(np.abs(h))) == 0  # el cursor sigue en k = 0
+
+
+def test_echo_without_echoes_is_bypass():
+    assert np.array_equal(echo([]), np.array([1.0 + 0j]))
+
+
+@pytest.mark.parametrize(
+    "echoes, K",
+    [
+        ([(2, 1.0)], None),  # |a| >= 1
+        ([(2, 1.2j)], None),
+        ([(0, 0.3)], None),  # d = 0 pisa el tap principal
+        ([(32, 0.3)], None),  # d > 31
+        ([(2, 0.3), (2, 0.1)], None),  # d repetido
+        ([(1.5, 0.3)], None),  # d no entero
+        ([(5, 0.3)], 5),  # K <= max(d)
+        ([(5, 0.3)], 33),  # K > 32
+    ],
+)
+def test_echo_rejects_invalid(echoes, K):
+    with pytest.raises(ValueError):
+        echo(echoes, K=K)
+
+
+@pytest.mark.parametrize(
+    "B_rel, m, K",
+    [(0.3, 4, 32), (0.4, 4, 32), (0.4, 6, 32), (0.4, 3, 16), (0.41, 4, 16), (0.6, 4, 16), (0.8, 2, 16)],
+)
+def test_K_rule(B_rel, m, K):
+    """Decisión 6: K = 32 si B <= 0,4 Rs y m >= 4; 16 si no (perfil principal: 16)."""
+    for Rs in (32e9, 100e9):
+        assert K_rule(B_rel * Rs, Rs, m) == K
