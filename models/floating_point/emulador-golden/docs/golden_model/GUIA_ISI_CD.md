@@ -37,6 +37,7 @@ Esta tabla es el **único registro de decisiones**:
 | 16 | Convención de la PRBS | LFSR de Fibonacci según ITU-T O.150 (x<sup>m</sup> + x<sup>k</sup> + 1): b[n] = b[n−m] ⊕ b[n−k]. Los primeros m bits de salida son la semilla, del MSB al LSB. Sin inversión por defecto; `invert=True` da la salida invertida que O.150 pide para PRBS-15/23/31. El generador del RTL tiene que usar la misma convención | aceptada |
 | 17 | Orden de trabajo de ISI y CD | **Intercalado por paso**, para presentar avances de los dos efectos: A1 → B1 → A2 → B2 → A3 → A4 → B3 → A5 → B4, agrupados en 4 hitos (checklist de §4). Se respetan las dependencias de cada paso | aceptada |
 | 18 | Referencia ideal de la CD (`cd_reference`) | Con `full=True` devuelve **las L muestras** del buffer de la FFT (x[n] ↔ y[pad + n], pad = R + 64 = `cd_reference_pad`), así la energía se conserva (rel. ~1e-16). Reversibilidad (D, S) → (−D, −S): **NRMSE < 1e-5**, no 1e-12: las colas del chirp discreto decaen como ~1/n, no entran en el relleno y dan la vuelta. El piso crece con z y baja con el largo de la señal (4096 símbolos QAM16: 1,0e-6 a 100 km, 2,8e-6 a 500 km, 7,3e-6 a 2000 km; con 2048 símbolos, 2,0e-5 a 2000 km). Sobre la misma grilla de L puntos, H* deshace H exacto (1e-12) | aceptada |
+| 19 | Criterios de Bessel y Butterworth (A3) | A 2 sps, con B > 0,5·R<sub>s</sub>, el prototipo analógico no está limitado en banda en f<sub>s</sub>/2 y el −3 dB se corre (hasta 0,66 dB con m = 2; 0,4 dB con Bessel m = 6, B = 0,6·R<sub>s</sub>); a 4 sps, con K y d al doble, el desvío baja a 0,11 dB: es el muestreo, no el diseño. Criterios: **−3 dB ±0,3 dB y energía ≥ 98,5 %** a 2 sps para B ≤ 0,5·R<sub>s</sub> (m = 2…6) y para el perfil principal (B = 0,6·R<sub>s</sub>, m = 4), y a 4 sps para B = 0,3…0,8·R<sub>s</sub>. **Fidelidad** (< 0,5 dB y < 0,4 muestras) en la banda pasante \|f\| ≤ B, no en \|H<sub>P</sub>\| > −20 dB: cerca de Nyquist el FIR no puede seguir al prototipo y hay ceros profundos. Vale para m ≥ 3 y B ≤ 0,7·R<sub>s</sub> (Bessel m = 3, B = 0,8·R<sub>s</sub>: 0,82 dB). Perfil principal: 0,06 dB y 0,03 muestras | aceptada |
 
 ---
 
@@ -392,7 +393,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
   | Energía | todos los perfiles | Σ\|h\|² = 1 (10⁻¹²) |
   | −3 dB en B | 20·log10(\|H(B)\|/\|H(0)\|) con H(f) = Σ h[k]e^(−j2πfkT<sub>s</sub>), para B/R<sub>s</sub> = 0,3 … 0,8 | −3,0 ± 0,3 dB |
   | Simetría | h[k₀−i] y h[k₀+i] | iguales (10⁻¹²), k₀ = ⌊K/2⌋ |
-  | Truncamiento | `energy_captured` | ≥ 98,5 % |
+  | Truncamiento | `energy_captured`, mismos casos | ≥ 98,5 % |
   | Escala con el escenario | mismo B/R<sub>s</sub> a 32 y 100 GBd | mismo h (10⁻¹²) |
   | Medido = gaussiano | `measured` con H<sub>G</sub> | igual a `gaussian` (10⁻¹²) |
   | Eco | `echo([(2, 0.5)])` | antes de normalizar, h = [1, 0, 0,5] |
@@ -421,9 +422,9 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 
   | Test | Cómo | Criterio |
   |---|---|---|
-  | −3 dB en B | m = 2 … 6; B/R<sub>s</sub> = 0,3 … 0,8; K por regla | −3,0 ± 0,3 dB |
-  | Truncamiento | `energy_captured` | ≥ 98,5 % |
-  | Fidelidad en magnitud | \|H<sub>FIR</sub>(f)/H<sub>FIR</sub>(0)\| contra \|H<sub>P</sub>(f)\| donde \|H<sub>P</sub>\| > −20 dB, m ≥ 3 | < 0,5 dB |
+  | −3 dB en B | m = 2 … 6; K por regla; a 2 sps B/R<sub>s</sub> = 0,3 … 0,5 y el perfil principal; a 4 sps (K y d al doble) B/R<sub>s</sub> = 0,3 … 0,8 (decisión 19) | −3,0 ± 0,3 dB |
+  | Truncamiento | `energy_captured`, mismos casos | ≥ 98,5 % |
+  | Fidelidad en magnitud | \|H<sub>FIR</sub>(f)/H<sub>FIR</sub>(0)\| contra \|H<sub>P</sub>(f)\| en \|f\| ≤ B, m ≥ 3, B ≤ 0,7·R<sub>s</sub> (decisión 19) | < 0,5 dB |
   | Fidelidad en retardo | τ<sub>FIR</sub>(f) − d contra τ<sub>P</sub>(f), en muestras, misma banda | < 0,4 muestras |
   | Regla de K | (0,4 R<sub>s</sub>, m=4) → 32; (0,6 R<sub>s</sub>, m=4) → 16; (0,3 R<sub>s</sub>, m=3) → 16 | exacto |
   | Regresión del perfil principal | contra el `.npy` | 10⁻¹² |
@@ -785,7 +786,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] B2.3 · Notebook `03_cd_modelo_fisico`
 
 *Hito 3 · Perfiles analógicos, CD corta y bloque `ChromaticDispersion`*
-- [ ] A3.1 · `isi/profiles.py`: `analog` (Bessel/Butterworth) + tests de −3 dB y energía
+- [x] A3.1 · `isi/profiles.py`: `analog` (Bessel/Butterworth) + tests de −3 dB y energía
 - [ ] A3.2 · Tests de fidelidad contra el prototipo analógico
 - [ ] A3.3 · Perfiles bessel/butter en el bloque + regresión del perfil principal (`tests/data/`)
 - [ ] A4.1 · Perfil `cd_short` (requiere B1.4) + tests

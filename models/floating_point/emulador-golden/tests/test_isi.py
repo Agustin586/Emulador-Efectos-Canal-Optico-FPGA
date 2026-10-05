@@ -3,10 +3,13 @@ from functools import partial
 
 import numpy as np
 import pytest
+from scipy import signal
 
 from emulador.blocks import ISI
 from emulador.isi import (
     K_rule,
+    analog,
+    analog_prototype,
     echo,
     energy_captured,
     gaussian,
@@ -395,3 +398,81 @@ def test_block_profiles_energy_and_shape(kw):
 def test_block_rejects_invalid_params(kw):
     with pytest.raises(ValueError):
         ISI(**{"profile": "gaussian", **kw})
+
+
+# --------------------------------------------------------------------------
+# profiles: analog (Bessel / Butterworth) (A3.1)
+# --------------------------------------------------------------------------
+KINDS = ["bessel", "butter"]
+ORDERS = [2, 3, 4, 5, 6]
+
+
+def _analog_h(kind, B_rel, m, sps=2, K=None):
+    fs = sps * RS
+    B = B_rel * RS
+    K = K if K is not None else K_rule(B, RS, m)
+    return analog(kind, B, fs, m, K), fs
+
+
+def test_bessel_norm_mag():
+    """norm="mag": B es el punto de -3 dB del prototipo (si no, B es otra cosa)."""
+    B = 0.6 * RS
+    b, a = analog_prototype("bessel", B, 4)
+    _, H = signal.freqs(b, a, worN=[0.0, 2 * np.pi * B])
+    assert 20 * np.log10(abs(H[1]) / abs(H[0])) == pytest.approx(-10 * np.log10(2), abs=1e-6)
+
+
+@pytest.mark.parametrize("kind", KINDS)
+@pytest.mark.parametrize("m", ORDERS)
+@pytest.mark.parametrize("B_rel", [0.3, 0.4, 0.5])
+def test_analog_3dB_and_energy_2sps(kind, m, B_rel):
+    """Decisión 19: a 2 sps, -3 dB ±0,3 y energía >= 98,5 % para B <= 0,5·Rs."""
+    h, fs = _analog_h(kind, B_rel, m)
+    assert abs(np.sum(np.abs(h) ** 2) - 1) < TOL
+    assert _H_rel_db(h, B_rel * RS, fs) == pytest.approx(-3.0, abs=0.3)
+    K = h.size
+    design = partial(analog, kind, B_rel * RS, fs, m, L=4096)
+    assert energy_captured(design, K, L=4096) >= 0.985
+
+
+@pytest.mark.parametrize("kind", KINDS)
+@pytest.mark.parametrize("m", ORDERS)
+@pytest.mark.parametrize("B_rel", [0.3, 0.4, 0.5, 0.6, 0.7, 0.8])
+def test_analog_3dB_and_energy_4sps(kind, m, B_rel):
+    """Decisión 19: a 4 sps vale todo el rango (peor desvío medido: 0,11 dB).
+
+    A 2 sps, con B > 0,5·Rs, el prototipo no está limitado en banda en fs/2 y el
+    -3 dB se corre hasta 0,66 dB: es el muestreo, no el diseño. K y d van al
+    doble que a 2 sps para cubrir el mismo tiempo (la regla de K está en
+    muestras a 2 sps).
+    """
+    fs, B = 4 * RS, B_rel * RS
+    K2 = K_rule(B, RS, m)
+    K, d = 2 * K2, 2 * (6 if K2 >= 32 else 3)
+    h = analog(kind, B, fs, m, K, d=d)
+    assert _H_rel_db(h, B, fs) == pytest.approx(-3.0, abs=0.3)
+    design = partial(analog, kind, B, fs, m, d=d, L=4096)
+    assert energy_captured(design, K, L=4096) >= 0.985
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_analog_main_profile_2sps(kind):
+    """Perfil principal (Bessel m = 4, B = 0,6·Rs, K = 16) y su par Butterworth, a 2 sps."""
+    h, fs = _analog_h(kind, 0.6, 4)
+    assert h.size == 16
+    assert _H_rel_db(h, 0.6 * RS, fs) == pytest.approx(-3.0, abs=0.3)
+
+
+def test_analog_is_causal_with_pre_delay():
+    """El pico cae después del pre-retardo d (d = 3 con K = 16, d = 6 con K = 32)."""
+    h16, _ = _analog_h("bessel", 0.6, 4)
+    h32, _ = _analog_h("bessel", 0.4, 4)
+    assert h32.size == 32
+    assert 3 <= int(np.argmax(np.abs(h16))) < 16
+    assert 6 <= int(np.argmax(np.abs(h32))) < 32
+    assert np.isrealobj(h16)
+
+
+def test_analog_rejects_bad_kind():
+    with pytest.raises(ValueError):
+        analog("cheby", 0.6 * RS, 2 * RS, 4, 16)

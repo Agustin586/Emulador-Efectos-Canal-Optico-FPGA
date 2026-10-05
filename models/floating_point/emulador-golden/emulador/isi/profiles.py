@@ -8,6 +8,7 @@ símbolos vecinos pero no la cambia (la SNR la fija el bloque AWGN).
   - echo             : canal de ecos discretos (multicamino).
   - gaussian         : pasa-bajos gaussiano diseñado en frecuencia (fase lineal).
   - measured         : respuesta medida, como función H(f) o tabla (f, H).
+  - analog           : Bessel o Butterworth desde el prototipo analógico (causal).
   - K_rule           : cantidad de taps según el ancho de banda y el orden.
   - energy_captured  : qué fracción de la energía queda en los K taps.
 
@@ -20,6 +21,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 
 import numpy as np
+from scipy import signal
 
 K_MAX = 32  # taps del FIR en hardware (decisión 6)
 
@@ -153,6 +155,60 @@ def _centered_taps(H: np.ndarray, K: int, real: bool = False) -> np.ndarray:
         h = h.real
     start = L // 2 - K // 2
     return normalize_energy(h[start : start + K])
+
+
+def analog_prototype(kind: str, B: float, m: int) -> tuple[np.ndarray, np.ndarray]:
+    """Coeficientes (b, a) del prototipo analógico de orden m con -3 dB en B.
+
+    - kind: "bessel" (fase casi lineal) o "butter" (máximamente plano, más ISI
+      por fase).
+    - B: ancho de banda a -3 dB, Hz.
+    - m: orden.
+    - return: (b, a) de H_P(s), con s en rad/s (``signal.freqs``).
+
+    El Bessel usa ``norm="mag"``: con la normalización por defecto, B no es el
+    punto de -3 dB.
+    """
+    wc = 2 * np.pi * B
+    if kind == "bessel":
+        return signal.bessel(m, wc, analog=True, norm="mag")
+    if kind == "butter":
+        return signal.butter(m, wc, analog=True)
+    raise ValueError(f'analog: kind tiene que ser "bessel" o "butter": {kind!r}')
+
+
+def analog(kind: str, B: float, fs: float, m: int, K: int, d: int | None = None, L: int = 4096) -> np.ndarray:
+    """Bessel o Butterworth diseñado en frecuencia desde el prototipo analógico.
+
+    Ref. A.3, PDF Ec. 12:
+
+        h[k] = Re{ IFFT_L{ H_P(f_l) · exp(-j 2π f_l d Ts) } }[k],  k = 0 … K-1
+
+    Se evalúa H_P en la grilla de ``fftfreq(L, 1/fs)`` y se le agrega un
+    pre-retardo de d muestras, que conserva la oscilación previa al pulso que
+    produce el recorte en Nyquist. **Nunca** con la transformación bilineal
+    (decisión 6): a 2 sps deforma el corte y el Bessel pierde la fase lineal.
+
+    - kind, B, m: como en ``analog_prototype``.
+    - fs: frecuencia de muestreo, Sa/s.
+    - K: cantidad de taps, 1 <= K <= L.
+    - d: pre-retardo en muestras; por defecto 6 si K >= 32 y 3 si no.
+    - L: largo de la FFT de diseño.
+    - return: array real de forma (K,), causal, con energía unitaria.
+
+    Límite del muestreo (decisión 19): a 2 sps y B > 0,5·Rs el prototipo no está
+    limitado en banda en fs/2 y el -3 dB se corre hasta ~0,7 dB (m = 2). A 4 sps,
+    con K y d al doble (mismo tiempo), desaparece.
+    """
+    if not (1 <= K <= L):
+        raise ValueError(f"analog: K tiene que cumplir 1 <= K <= L = {L}: {K!r}")
+    if d is None:
+        d = 6 if K >= 32 else 3
+    b, a = analog_prototype(kind, B, m)
+    f = np.fft.fftfreq(L, d=1 / fs)
+    _, H = signal.freqs(b, a, worN=2 * np.pi * f)
+    H = H * np.exp(-2j * np.pi * f * d / fs)
+    return normalize_energy(np.fft.ifft(H).real[:K])
 
 
 def energy_captured(design: Callable[[int], np.ndarray], K: int, L: int = 8192) -> float:
