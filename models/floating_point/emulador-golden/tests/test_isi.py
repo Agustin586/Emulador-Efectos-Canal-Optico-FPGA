@@ -11,6 +11,7 @@ from emulador.isi import (
     K_rule,
     analog,
     analog_prototype,
+    cd_short,
     echo,
     energy_captured,
     gaussian,
@@ -20,8 +21,10 @@ from emulador.isi import (
     normalize_energy,
 )
 from emulador.isi.profiles import _interp_table
-from emulador.metrics import group_delay
-from emulador.stimuli import impulse
+from emulador.cd import cd_reference, cd_transfer
+from emulador.config import D_si, Scenario
+from emulador.metrics import group_delay, nrmse
+from emulador.stimuli import comm_signal, impulse
 
 TOL = 1e-12
 DATA = Path(__file__).parent / "data"
@@ -577,3 +580,75 @@ def test_block_main_profile_same_at_other_rate():
     h32 = ISI(profile="bessel").coefficients()["h"]
     h100 = ISI(profile="bessel", Rs=100e9).coefficients()["h"]
     assert np.max(np.abs(h32 - h100)) < TOL
+
+
+# --------------------------------------------------------------------------
+# Perfil CD corta (A4.1)
+# --------------------------------------------------------------------------
+D_SMF = D_si(17.0)
+LAM = 1550e-9
+KM = 1e3
+
+
+def test_cd_short_length():
+    assert cd_short(64e9, D_SMF, LAM, 10 * KM).size == 5
+
+
+def test_cd_short_constant_magnitude_and_quadratic_phase():
+    h = cd_short(64e9, D_SMF, LAM, 50 * KM)
+    assert abs(np.sum(np.abs(h) ** 2) - 1) < TOL
+    assert np.max(np.abs(np.abs(h) - np.abs(h[0]))) < TOL
+    n = np.arange(h.size) - h.size // 2
+    phase = np.unwrap(np.angle(h))
+    assert np.max(np.abs(phase - np.polyval(np.polyfit(n, phase, 2), n))) < 1e-10
+
+
+def test_cd_short_sign_matches_cd_transfer():
+    """Curvatura de la fase de H_FIR (FIR centrado) con el mismo signo que H_CD."""
+    fs, z = 64e9, 30 * KM
+    h = cd_short(fs, D_SMF, LAM, z)
+    L = 8192
+    H = np.fft.fftshift(np.fft.fft(np.roll(np.pad(h, (0, L - h.size)), -(h.size // 2))))
+    f = np.fft.fftshift(np.fft.fftfreq(L, 1 / fs))
+    band = np.abs(f) < fs / 8
+    curv = np.polyfit(f[band], np.unwrap(np.angle(H[band])), 2)[0]
+    curv_ref = np.polyfit(f[band], np.unwrap(np.angle(np.fft.fftshift(cd_transfer(L, fs, D_SMF, LAM, z))[band])), 2)[0]
+    assert np.sign(curv) == np.sign(curv_ref) > 0
+
+
+def test_cd_short_limit():
+    """R <= 31 (K <= 32 y R impar): a 64 GSa/s, hasta ~55 km de SSMF."""
+    assert cd_short(64e9, D_SMF, LAM, 55 * KM).size == 31
+    with pytest.raises(ValueError):
+        cd_short(64e9, D_SMF, LAM, 100 * KM)
+
+
+def test_cd_short_R1_is_identity():
+    """Decisión 20: con R = 1 (z <= 3 km a 64 GSa/s) el tap de Savory sería una
+    rotación de 45° (NRMSE ~0,7); [1] queda a NRMSE <= 0,15 de la referencia."""
+    assert np.array_equal(cd_short(64e9, D_SMF, LAM, 2 * KM), np.array([1.0 + 0j]))
+    assert np.array_equal(cd_short(64e9, D_SMF, LAM, 0.0), np.array([1.0 + 0j]))
+
+
+@pytest.mark.parametrize("z_km, max_nrmse", [(10, 0.40), (20, 0.25), (30, 0.25), (40, 0.20), (55, 0.20)])
+def test_cd_short_against_reference(z_km, max_nrmse):
+    """Decisión 20: NRMSE contra cd_reference (QAM16, 4096 símbolos, 2 sps).
+
+    Medido: 0,38 (10 km), 0,23 (20), 0,19 (30), 0,17 (40), 0,14 (55). El
+    truncamiento abrupto del chirp deja 2 a 5 dB de ondulación en la banda: el
+    perfil es ilustrativo, la CD de verdad va por overlap-save.
+    """
+    z = z_km * KM
+    x = comm_signal(Scenario(), n_symbols=4096).samples
+    y = ISI(profile="cd_short", length_km=z_km)(x)
+    assert nrmse(y, cd_reference(x, 64e9, D_SMF, LAM, z)) < max_nrmse
+
+
+def test_block_cd_short():
+    blk = ISI(profile="cd_short", length_km=30.0)
+    h = blk.coefficients()["h"]
+    assert np.max(np.abs(h - cd_short(64e9, D_SMF, LAM, 30 * KM))) < TOL
+    assert blk.delay_samples == h.size // 2  # magnitud constante: el cursor es el tap central
+    assert np.array_equal(ISI(profile="cd_short").coefficients()["h"], np.array([1.0 + 0j]))
+    with pytest.raises(ValueError):
+        ISI(profile="cd_short", length_km=100.0)

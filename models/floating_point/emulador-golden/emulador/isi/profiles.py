@@ -9,6 +9,7 @@ símbolos vecinos pero no la cambia (la SNR la fija el bloque AWGN).
   - gaussian         : pasa-bajos gaussiano diseñado en frecuencia (fase lineal).
   - measured         : respuesta medida, como función H(f) o tabla (f, H).
   - analog           : Bessel o Butterworth desde el prototipo analógico (causal).
+  - cd_short         : CD de pocos km con los taps de Savory (vincula ISI y CD).
   - K_rule           : cantidad de taps según el ancho de banda y el orden.
   - energy_captured  : qué fracción de la energía queda en los K taps.
 
@@ -22,6 +23,8 @@ from collections.abc import Callable, Iterable
 
 import numpy as np
 from scipy import signal
+
+from ..cd.physics import savory_taps
 
 K_MAX = 32  # taps del FIR en hardware (decisión 6)
 
@@ -209,6 +212,34 @@ def analog(kind: str, B: float, fs: float, m: int, K: int, d: int | None = None,
     _, H = signal.freqs(b, a, worN=2 * np.pi * f)
     H = H * np.exp(-2j * np.pi * f * d / fs)
     return normalize_energy(np.fft.ifft(H).real[:K])
+
+
+def cd_short(fs: float, D: float, lam: float, z: float) -> np.ndarray:
+    """CD corta en el FIR de la ISI: taps de Savory normalizados (Ref. A.3, PDF Ec. 25).
+
+    - fs: frecuencia de muestreo, Sa/s.
+    - D: coeficiente de dispersión, s/m².
+    - lam: longitud de onda, m.
+    - z: distancia, m.
+    - return: array complejo de forma (R,), R = ``cd_R`` impar <= 31, con energía
+      unitaria y el tap central en R // 2.
+
+    Lanza ``ValueError`` si R > 31 (no entra en K <= 32): a 64 GSa/s con SSMF,
+    más de ~55 km.
+
+    Decisión 20: es una aproximación **ilustrativa**. El truncamiento abrupto
+    del chirp deja 2 a 5 dB de ondulación en la banda (NRMSE contra
+    ``cd_reference`` de 0,38 a 10 km y 0,14 a 55 km, QAM16 a 2 sps; con R = 3 es
+    peor que no hacer nada). Con R = 1 (z <= 3 km a 64 GSa/s) devuelve [1]: el
+    único tap de Savory sería una rotación de 45°. La CD de verdad va por
+    overlap-save (bloque ``ChromaticDispersion``).
+    """
+    h = savory_taps(fs, D, lam, z)
+    if h.size > K_MAX - 1:
+        raise ValueError(f"cd_short: R = {h.size} taps no entra en K <= {K_MAX} (usar el bloque de CD)")
+    if h.size == 1:
+        return np.array([1.0 + 0j])
+    return normalize_energy(h)
 
 
 def energy_captured(design: Callable[[int], np.ndarray], K: int, L: int = 8192) -> float:

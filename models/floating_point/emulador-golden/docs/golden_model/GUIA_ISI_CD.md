@@ -38,6 +38,7 @@ Esta tabla es el **único registro de decisiones**:
 | 17 | Orden de trabajo de ISI y CD | **Intercalado por paso**, para presentar avances de los dos efectos: A1 → B1 → A2 → B2 → A3 → A4 → B3 → A5 → B4, agrupados en 4 hitos (checklist de §4). Se respetan las dependencias de cada paso | aceptada |
 | 18 | Referencia ideal de la CD (`cd_reference`) | Con `full=True` devuelve **las L muestras** del buffer de la FFT (x[n] ↔ y[pad + n], pad = R + 64 = `cd_reference_pad`), así la energía se conserva (rel. ~1e-16). Reversibilidad (D, S) → (−D, −S): **NRMSE < 1e-5**, no 1e-12: las colas del chirp discreto decaen como ~1/n, no entran en el relleno y dan la vuelta. El piso crece con z y baja con el largo de la señal (4096 símbolos QAM16: 1,0e-6 a 100 km, 2,8e-6 a 500 km, 7,3e-6 a 2000 km; con 2048 símbolos, 2,0e-5 a 2000 km). Sobre la misma grilla de L puntos, H* deshace H exacto (1e-12) | aceptada |
 | 19 | Criterios de Bessel y Butterworth (A3) | A 2 sps, con B > 0,5·R<sub>s</sub>, el prototipo analógico no está limitado en banda en f<sub>s</sub>/2 y el −3 dB se corre (hasta 0,66 dB con m = 2; 0,4 dB con Bessel m = 6, B = 0,6·R<sub>s</sub>); a 4 sps, con K y d al doble, el desvío baja a 0,11 dB: es el muestreo, no el diseño. Criterios: **−3 dB ±0,3 dB y energía ≥ 98,5 %** a 2 sps para B ≤ 0,5·R<sub>s</sub> (m = 2…6) y para el perfil principal (B = 0,6·R<sub>s</sub>, m = 4), y a 4 sps para B = 0,3…0,8·R<sub>s</sub>. **Fidelidad** (< 0,5 dB y < 0,4 muestras) en la banda pasante \|f\| ≤ B, no en \|H<sub>P</sub>\| > −20 dB: cerca de Nyquist el FIR no puede seguir al prototipo y hay ceros profundos. Vale para m ≥ 3 y B ≤ 0,7·R<sub>s</sub> (Bessel m = 3, B = 0,8·R<sub>s</sub>: 0,82 dB). Perfil principal: 0,06 dB y 0,03 muestras | aceptada |
+| 20 | Perfil `cd_short` (A4) | Taps de Savory normalizados, R ≤ 31 (K ≤ 32 y R impar: ~55 km de SSMF a 64 GSa/s). Con **R = 1** (z ≤ 3 km) devuelve **[1]**: el único tap de Savory sería una rotación de 45° (NRMSE ~0,7 contra la referencia; [1] da ≤ 0,15). Cursor = tap central (los taps tienen todos la misma magnitud). **Es ilustrativo**: el truncamiento abrupto del chirp deja 2 a 5 dB de ondulación en la banda. NRMSE contra `cd_reference` (QAM16, 4096 símbolos, 2 sps), medido: 0,38 (10 km), 0,23 (20), 0,19 (30), 0,17 (40), 0,14 (55); con R = 3 es peor que no aplicar nada. Criterio de test: < 0,40 a 10 km, < 0,25 a 20–30 km, < 0,20 a 40–55 km | aceptada (propuesta, revisar) |
 
 ---
 
@@ -460,7 +461,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
   | Fase cuadrática | ajuste de grado 2 a `unwrap(angle(h))` | residuo 10⁻¹⁰ |
   | Signo | fase de H<sub>FIR</sub> a baja frecuencia contra `cd_transfer` | mismo signo de curvatura |
   | Límite | z = 100 km a 64 GSa/s (R = 55) | `ValueError` |
-  | Contra la referencia | NRMSE contra `cd_reference` | **a definir**: medir en A4 y agregarlo a §1 |
+  | Contra la referencia | NRMSE contra `cd_reference`, QAM16, 4096 símbolos | < 0,40 (10 km), < 0,25 (20–30 km), < 0,20 (40–55 km) (decisión 20) |
 
 - **Notebook:** `02_isi_generica.ipynb`: coeficientes del chirp y comparación con la CD en frecuencia.
 - **Errores a evitar:** usar el signo de Savory tal cual sin verificarlo contra `cd_transfer` (Savory escribe el compensador).
@@ -789,7 +790,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] A3.1 · `isi/profiles.py`: `analog` (Bessel/Butterworth) + tests de −3 dB y energía
 - [x] A3.2 · Tests de fidelidad contra el prototipo analógico
 - [x] A3.3 · Perfiles bessel/butter en el bloque + regresión del perfil principal (`tests/data/`)
-- [ ] A4.1 · Perfil `cd_short` (requiere B1.4) + tests
+- [x] A4.1 · Perfil `cd_short` (requiere B1.4) + tests
 - [ ] B3.1 · `cd/overlap_save.py` (`cd_hbar`, `cd_overlap_save`) + test contra la referencia
 - [ ] B3.2 · Bloque `ChromaticDispersion` (docstring corregido, `fs=64e9`) + tests + `run_block`
 
