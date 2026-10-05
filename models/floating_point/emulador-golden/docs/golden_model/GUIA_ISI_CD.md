@@ -798,7 +798,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 
 *Hito 4 · Caracterización de la ISI y alcance del overlap-save*
 - [x] A5.1 · Test de SNR equivalente contra la Tabla 4 del PDF
-- [ ] A5.2 · Notebook `02_isi_generica`
+- [x] A5.2 · Notebook `02_isi_generica`
 - [ ] B4.1 · Tests del residuo de β₃ (Tabla 17 del PDF)
 - [ ] B4.2 · Notebook `04_cd_overlap_save` (Figs. 9 y 10, hardware)
 
