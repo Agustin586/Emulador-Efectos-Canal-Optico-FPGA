@@ -1,5 +1,6 @@
 """ISI genérica (Parte A de GUIA_ISI_CD.md)."""
 from functools import partial
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -23,6 +24,7 @@ from emulador.metrics import group_delay
 from emulador.stimuli import impulse
 
 TOL = 1e-12
+DATA = Path(__file__).parent / "data"
 
 
 def _crandn(rng, *shape):
@@ -543,3 +545,35 @@ def test_bilinear_bessel_fails_the_same_criteria():
     dt = ((tau_z - tau_p) * fs)[np.abs(f) <= B]
     assert mag > 0.5
     assert np.max(np.abs(dt - dt.mean())) > 0.4  # sin pre-retardo: se compara la variación
+
+
+# --------------------------------------------------------------------------
+# Perfiles bessel/butter en el bloque y regresión del perfil principal (A3.3)
+# --------------------------------------------------------------------------
+@pytest.mark.parametrize("kind", KINDS)
+def test_block_analog_profiles(kind):
+    blk = ISI(profile=kind, B_rel=0.5, order=3)
+    expected = analog(kind, 0.5 * 32e9, 64e9, 3, 16)
+    assert np.max(np.abs(blk.coefficients()["h"] - expected)) < TOL
+    assert ISI(profile=kind, B_rel=0.4, order=4).coefficients()["h"].size == 32
+
+
+def test_block_main_profile_regression():
+    """Perfil principal (decisión 6): Bessel m = 4, B = 0,6·Rs, K = 16, a 32 GBd y 2 sps.
+
+    tests/data/isi_bessel_m4_B06_K16.npy se generó con ``analog`` después de
+    revisar los coeficientes a ojo y de que pasaran los tests de A3.1 y A3.2.
+    """
+    blk = ISI(profile="bessel")
+    h = blk.coefficients()["h"]
+    ref = np.load(DATA / "isi_bessel_m4_B06_K16.npy")
+    assert h.size == 16
+    assert np.max(np.abs(h - ref)) < TOL
+    assert blk.delay_samples == 4  # pre-retardo d = 3 + ~1 muestra del Bessel
+
+
+def test_block_main_profile_same_at_other_rate():
+    """Mismo B/Rs y sps a 100 GBd: mismos taps (el diseño solo depende de B/fs)."""
+    h32 = ISI(profile="bessel").coefficients()["h"]
+    h100 = ISI(profile="bessel", Rs=100e9).coefficients()["h"]
+    assert np.max(np.abs(h32 - h100)) < TOL

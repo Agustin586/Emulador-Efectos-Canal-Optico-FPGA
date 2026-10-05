@@ -10,7 +10,10 @@ Parámetros:
                  "taps"     : ``taps`` tal cual (por defecto, [1]: sin distorsión);
                  "echo"     : camino principal + ``echoes``;
                  "gaussian" : pasa-bajos gaussiano con -3 dB en B = B_rel·Rs;
-                 "measured" : respuesta medida ``H_measured``.
+                 "measured" : respuesta medida ``H_measured``;
+                 "bessel"   : Bessel de orden ``order`` con -3 dB en B (fase casi
+                              lineal; perfil principal con m = 4, B = 0,6·Rs, K = 16);
+                 "butter"   : Butterworth de orden ``order`` (perfil de estrés).
                Todos menos "taps" salen con energía unitaria.
   taps       : coeficientes h[k], complejos (profile="taps").
   Rs         : tasa de símbolos [Bd]; con sps da fs = Rs·sps.
@@ -18,7 +21,7 @@ Parámetros:
   B_rel      : ancho de banda a -3 dB relativo a Rs (B = B_rel·Rs).
   order      : orden m del filtro; entra en la regla de K.
   K          : cantidad de taps (<= 32). None -> K_rule(B, Rs, order) para
-               gaussian y measured; max(d_i) + 1 para echo.
+               gaussian, measured, bessel y butter; max(d_i) + 1 para echo.
   echoes     : pares (d_i, a_i) del perfil "echo": retardo en muestras y
                amplitud compleja, |a_i| < 1.
   H_measured : respuesta medida del perfil "measured": función H(f) con f en Hz,
@@ -42,10 +45,10 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from ..common import Block
-from ..isi import K_rule, echo, gaussian, isi_apply, measured
+from ..isi import K_rule, analog, echo, gaussian, isi_apply, measured
 from ..isi.profiles import K_MAX
 
-PROFILES = ("taps", "echo", "gaussian", "measured")
+PROFILES = ("taps", "echo", "gaussian", "measured", "bessel", "butter")
 
 
 @dataclass
@@ -85,6 +88,8 @@ class ISI(Block):
             raise ValueError(f"isi: K tiene que cumplir 1 <= K <= {K_MAX}: {K!r}")
         if self.profile == "gaussian":
             return gaussian(B, fs, K)
+        if self.profile in ("bessel", "butter"):
+            return analog(self.profile, B, fs, self.order, K)
         if self.H_measured is None:
             raise ValueError('isi: profile="measured" necesita H_measured')
         return measured(self.H_measured, fs, K)
