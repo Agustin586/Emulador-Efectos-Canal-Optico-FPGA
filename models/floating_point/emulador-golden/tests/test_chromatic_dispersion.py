@@ -2,6 +2,7 @@
 import numpy as np
 import pytest
 
+from emulador.blocks import ISI, ChromaticDispersion
 from emulador.cd import (
     betas,
     cd_N,
@@ -426,3 +427,89 @@ def test_overlap_save_impulse_is_centered_chirp():
     y = np.abs(cd_overlap_save(x, cd_hbar(N, FS, D, LAM, z)))
     c = n0 + N // 2
     assert np.max(np.abs(y[c - 100 : c] - y[c + 100 : c : -1])) < 1e-12
+
+
+# --------------------------------------------------------------------------
+# Bloque ChromaticDispersion (B3.2)
+# --------------------------------------------------------------------------
+def test_block_default_is_identity():
+    """length_km = 0: H̄ es un retardo puro de N/2 y process lo descuenta."""
+    x = _qam()
+    blk = ChromaticDispersion()
+    assert blk.N == 128 and blk.delay_samples == 64
+    assert nrmse(blk(x), x) < 1e-14
+
+
+def test_block_hbar_matches_functions():
+    blk = ChromaticDispersion(length_km=300.0, S_ps_nm2_km=0.057)
+    N = cd_N(FS, D, LAM, 300 * KM)
+    c = blk.coefficients()
+    assert c["N"] == N == blk.N
+    assert np.max(np.abs(c["Hbar"] - cd_hbar(N, FS, D, LAM, 300 * KM, S=S))) < TOL
+    assert np.max(np.abs(np.abs(c["Hbar"]) - 1)) < TOL
+
+
+def test_block_S0_hbar_identical_to_beta2_only():
+    a = ChromaticDispersion(length_km=100.0).coefficients()["Hbar"]
+    b = ChromaticDispersion(length_km=100.0, S_ps_nm2_km=0.0).coefficients()["Hbar"]
+    assert np.array_equal(a, b)
+    assert np.array_equal(a, cd_hbar(128, FS, D, LAM, 100 * KM))
+
+
+@pytest.mark.parametrize("z_km", [100, 500])
+def test_block_aligned_vs_raw(z_km):
+    """process = process_hw adelantado N/2 (exacto); el retardo declarado es N/2."""
+    blk = ChromaticDispersion(length_km=z_km, S_ps_nm2_km=0.057)
+    x = _qam()
+    y, y_hw = blk(x), blk.process_hw(x)
+    h = blk.delay_samples
+    assert h == blk.N // 2
+    assert y.shape == y_hw.shape == x.shape
+    assert np.array_equal(y[: x.size - h], y_hw[h:])
+
+
+@pytest.mark.parametrize("z_km", [100, 500, 2000])
+def test_block_against_reference(z_km):
+    """La salida alineada sigue a la referencia (QAM16, decisión 21), sin bordes."""
+    blk = ChromaticDispersion(length_km=z_km, S_ps_nm2_km=0.057)
+    x = _qam(10_000)
+    r = cd_reference(x, FS, D, LAM, z_km * KM, S=S)
+    N = blk.N
+    assert nrmse(blk(x)[N : x.size - N], r[N : x.size - N]) < 1e-2
+
+
+def test_block_two_polarizations():
+    blk = ChromaticDispersion(length_km=200.0)
+    x = np.stack([_qam(), 1j * _qam()[::-1]])
+    y, y_hw = blk(x), blk.process_hw(x)
+    assert y.shape == x.shape
+    for p in range(2):
+        assert np.max(np.abs(y[p] - blk(x[p]))) < 1e-12
+        assert np.max(np.abs(y_hw[p] - blk.process_hw(x[p]))) < 1e-12
+
+
+def test_block_explicit_N_and_validation():
+    assert ChromaticDispersion(length_km=100.0, N=512).N == 512
+    for bad in (127, 0, 64):  # impar, cero, menor que R = 111 a 200 km
+        with pytest.raises(ValueError):
+            ChromaticDispersion(length_km=200.0, N=bad)
+    with pytest.raises(ValueError):  # cd_N supera N_max = 2048
+        ChromaticDispersion(length_km=4000.0)
+
+
+def test_block_reversible_with_negative_D():
+    """+D y luego -D (fibra compensadora): vuelve a la entrada fuera de los bordes."""
+    x = _qam(8192)
+    y = ChromaticDispersion(length_km=500.0)(x)
+    back = ChromaticDispersion(length_km=500.0, D_ps_nm_km=-17.0)(y)
+    N = 512
+    assert nrmse(back[2 * N : -2 * N], x[2 * N : -2 * N]) < 1e-2
+
+
+def test_from_scenario():
+    esc = Scenario(Rs=100e9, sps=2, wavelength=1560e-9)
+    cd = ChromaticDispersion.from_scenario(esc, length_km=50.0)
+    assert cd.fs == 200e9 and cd.wavelength_nm == pytest.approx(1560.0) and cd.length_km == 50.0
+    isi = ISI.from_scenario(esc, profile="gaussian")
+    assert (isi.Rs, isi.sps) == (100e9, 2)
+    assert np.max(np.abs(isi.coefficients()["h"] - ISI(profile="gaussian").coefficients()["h"])) < TOL

@@ -793,7 +793,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] A3.3 · Perfiles bessel/butter en el bloque + regresión del perfil principal (`tests/data/`)
 - [x] A4.1 · Perfil `cd_short` (requiere B1.4) + tests
 - [x] B3.1 · `cd/overlap_save.py` (`cd_hbar`, `cd_overlap_save`) + test contra la referencia
-- [ ] B3.2 · Bloque `ChromaticDispersion` (docstring corregido, `fs=64e9`) + tests + `run_block`
+- [x] B3.2 · Bloque `ChromaticDispersion` (docstring corregido, `fs=64e9`) + tests + `run_block`
 
 *Hito 4 · Caracterización de la ISI y alcance del overlap-save*
 - [ ] A5.1 · Test de SNR equivalente contra la Tabla 4 del PDF

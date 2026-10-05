@@ -50,7 +50,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from ..common import Block
-from ..config import D_si
+from ..config import D_si, Scenario
 from ..isi import K_rule, analog, cd_short, echo, gaussian, isi_apply, measured
 from ..isi.profiles import K_MAX
 
@@ -87,6 +87,11 @@ class ISI(Block):
         else:
             self.delay_samples = int(np.argmax(np.abs(h)))
 
+    @classmethod
+    def from_scenario(cls, esc: Scenario, **kw) -> ISI:
+        """Toma Rs, sps y λ del escenario; el resto de los campos va en ``kw``."""
+        return cls(Rs=esc.Rs, sps=esc.sps, wavelength_nm=esc.wavelength * 1e9, **kw)
+
     def _design(self) -> np.ndarray:
         """Taps según ``profile``, en SI (fs = Rs·sps, B = B_rel·Rs)."""
         if self.profile == "taps":
@@ -95,7 +100,7 @@ class ISI(Block):
             return echo(self.echoes, K=self.K)
         fs = self.Rs * self.sps
         if self.profile == "cd_short":
-            return cd_short(fs, D_si(self.D_ps_nm_km), self.wavelength_nm * 1e-9, self.length_km * 1e3)
+            return cd_short(fs, D_si(self.D_ps_nm_km), self.wavelength_nm / 1e9, self.length_km * 1e3)
         B = self.B_rel * self.Rs
         K = self.K if self.K is not None else K_rule(B, self.Rs, self.order)
         if not (1 <= K <= K_MAX):
