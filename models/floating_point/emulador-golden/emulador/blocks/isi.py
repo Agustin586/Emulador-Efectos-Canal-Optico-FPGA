@@ -6,10 +6,23 @@ canal tuviera memoria. Se modela con un filtro FIR de respuesta configurable.
 Modelo:  y[n] = sum_{k=0}^{K-1} h[k] * x[n-k]   (taps a f_s, K <= 32)
 
 Parámetros:
-  taps    : coeficientes h[k], complejos. Por defecto un solo tap igual a 1
-            (sin distorsión). Se usan con ``profile="taps"``.
-  profile : origen de los taps. Por ahora solo "taps" (taps arbitrarios); los
-            perfiles de la Parte A de GUIA_ISI_CD.md se agregan en A2 a A4.
+  profile    : de dónde salen los taps (``emulador/isi/profiles.py``):
+                 "taps"     : ``taps`` tal cual (por defecto, [1]: sin distorsión);
+                 "echo"     : camino principal + ``echoes``;
+                 "gaussian" : pasa-bajos gaussiano con -3 dB en B = B_rel·Rs;
+                 "measured" : respuesta medida ``H_measured``.
+               Todos menos "taps" salen con energía unitaria.
+  taps       : coeficientes h[k], complejos (profile="taps").
+  Rs         : tasa de símbolos [Bd]; con sps da fs = Rs·sps.
+  sps        : muestras por símbolo.
+  B_rel      : ancho de banda a -3 dB relativo a Rs (B = B_rel·Rs).
+  order      : orden m del filtro; entra en la regla de K.
+  K          : cantidad de taps (<= 32). None -> K_rule(B, Rs, order) para
+               gaussian y measured; max(d_i) + 1 para echo.
+  echoes     : pares (d_i, a_i) del perfil "echo": retardo en muestras y
+               amplitud compleja, |a_i| < 1.
+  H_measured : respuesta medida del perfil "measured": función H(f) con f en Hz,
+               o tabla (f, H).
 
 Retardo (GUIA_ISI_CD.md §1, decisión 8):
   - ``delay_samples`` es el cursor k0 = argmax |h[k]|.
@@ -29,26 +42,52 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from ..common import Block
-from ..isi import isi_apply
+from ..isi import K_rule, echo, gaussian, isi_apply, measured
 from ..isi.profiles import K_MAX
 
-PROFILES = ("taps",)
+PROFILES = ("taps", "echo", "gaussian", "measured")
 
 
 @dataclass
 class ISI(Block):
     taps: np.ndarray = field(default_factory=lambda: np.array([1.0 + 0j]))
     profile: str = "taps"
+    Rs: float = 32e9
+    sps: int = 2
+    B_rel: float = 0.6
+    order: int = 4
+    K: int | None = None
+    echoes: tuple = ()
+    H_measured: object = None
     name = "isi"
 
     def __post_init__(self):
         if self.profile not in PROFILES:
             raise ValueError(f"isi: perfil desconocido {self.profile!r} (opciones: {PROFILES})")
-        h = np.asarray(self.taps, dtype=complex)
+        if self.Rs <= 0 or self.sps < 1 or self.B_rel <= 0:
+            raise ValueError(f"isi: Rs, sps y B_rel tienen que ser positivos: {self.Rs!r}, {self.sps!r}, {self.B_rel!r}")
+        h = np.asarray(self._design(), dtype=complex)
         if h.ndim != 1 or not (1 <= h.size <= K_MAX):
             raise ValueError(f"isi: taps tiene que ser 1-D con 1 <= K <= {K_MAX}: forma {h.shape}")
         self.h = h
         self.delay_samples = int(np.argmax(np.abs(h)))
+
+    def _design(self) -> np.ndarray:
+        """Taps según ``profile``, en SI (fs = Rs·sps, B = B_rel·Rs)."""
+        if self.profile == "taps":
+            return self.taps
+        if self.profile == "echo":
+            return echo(self.echoes, K=self.K)
+        fs = self.Rs * self.sps
+        B = self.B_rel * self.Rs
+        K = self.K if self.K is not None else K_rule(B, self.Rs, self.order)
+        if not (1 <= K <= K_MAX):
+            raise ValueError(f"isi: K tiene que cumplir 1 <= K <= {K_MAX}: {K!r}")
+        if self.profile == "gaussian":
+            return gaussian(B, fs, K)
+        if self.H_measured is None:
+            raise ValueError('isi: profile="measured" necesita H_measured')
+        return measured(self.H_measured, fs, K)
 
     def process_hw(self, x: np.ndarray) -> np.ndarray:
         """FIR causal, retrasado ``delay_samples`` muestras (como el hardware)."""

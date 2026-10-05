@@ -12,8 +12,10 @@ from emulador.isi import (
     gaussian,
     isi_apply,
     isi_apply_stream,
+    measured,
     normalize_energy,
 )
+from emulador.isi.profiles import _interp_table
 from emulador.stimuli import impulse
 
 TOL = 1e-12
@@ -270,3 +272,126 @@ def test_energy_captured_detects_truncation():
     design = partial(gaussian, 0.1 * RS, 2 * RS)
     assert energy_captured(design, 4) < 0.9
     assert energy_captured(design, 32) > energy_captured(design, 4)
+
+
+# --------------------------------------------------------------------------
+# profiles: measured; perfiles echo/gaussian/measured en el bloque (A2.3)
+# --------------------------------------------------------------------------
+def _H_gauss(B):
+    return lambda f: np.exp(-np.log(2) / 2 * f**2 / B**2)
+
+
+@pytest.mark.parametrize("K", [16, 32])
+def test_measured_function_equals_gaussian(K):
+    B, fs = 0.6 * RS, 2 * RS
+    h = measured(_H_gauss(B), fs, K)
+    assert np.max(np.abs(h - gaussian(B, fs, K))) < TOL
+
+
+def test_measured_table_on_design_grid_equals_gaussian():
+    """Tabla (f, H) en los mismos puntos de la FFT de diseño: la interpolación es exacta."""
+    B, fs, L = 0.5 * RS, 2 * RS, 8192
+    f = np.fft.fftfreq(L, 1 / fs)
+    h = measured((f, _H_gauss(B)(f)), fs, 16, L=L)
+    assert np.max(np.abs(h - gaussian(B, fs, 16, L=L))) < TOL
+
+
+def test_measured_coarse_table():
+    """Tabla gruesa (17 puntos en toda la banda): la interpolación en dB alcanza."""
+    B, fs = 0.6 * RS, 2 * RS
+    f = np.linspace(-fs / 2, fs / 2, 17)
+    h = measured((f, _H_gauss(B)(f)), fs, 16)
+    assert abs(np.sum(np.abs(h) ** 2) - 1) < TOL
+    assert _H_rel_db(h, B, fs) == pytest.approx(-3.0, abs=0.3)
+    assert np.max(np.abs(h - gaussian(B, fs, 16))) < 1e-3
+
+
+def test_measured_table_is_zero_outside_range():
+    """Fuera del rango de la tabla, H = 0; adentro, interpola magnitud y fase."""
+    f_t = np.array([-10e9, 0.0, 10e9])
+    H_t = np.array([0.5, 1.0, 0.5 * np.exp(1j)])
+    f = np.array([-20e9, -10e9, 5e9, 10e9, 20e9])
+    Hf = _interp_table((f_t, H_t), f)
+    assert Hf[0] == 0 and Hf[-1] == 0
+    assert abs(Hf[1] - 0.5) < TOL and abs(Hf[3] - 0.5 * np.exp(1j)) < TOL
+    # a mitad de camino: -3,01 dB (promedio en dB de 0 y -6,02) y fase 0,5 rad
+    assert abs(Hf[2] - np.sqrt(0.5) * np.exp(0.5j)) < TOL
+
+
+def test_measured_keeps_asymmetric_response():
+    """Una H con retardo de 2 muestras da taps complejos con el cursor corrido 2."""
+    B, fs, K = 0.6 * RS, 2 * RS, 16
+    h = measured(lambda f: _H_gauss(B)(f) * np.exp(-2j * np.pi * f * 2 / fs), fs, K)
+    assert int(np.argmax(np.abs(h))) == K // 2 + 2
+
+
+def test_measured_rejects_bad_table():
+    with pytest.raises(ValueError):
+        measured((np.array([0.0, 1e9]), np.array([1.0])), 2 * RS, 16)
+
+
+def test_block_gaussian_default_params():
+    """Perfil gaussiano con los valores por defecto: B = 0,6·Rs, 32 GBd, 2 sps, K = 16."""
+    blk = ISI(profile="gaussian")
+    h = blk.coefficients()["h"]
+    assert h.size == 16
+    assert np.max(np.abs(h - gaussian(0.6 * 32e9, 64e9, 16))) < TOL
+    assert blk.delay_samples == 8
+
+
+def test_block_gaussian_K_rule_and_override():
+    assert ISI(profile="gaussian", B_rel=0.4).coefficients()["h"].size == 32
+    assert ISI(profile="gaussian", B_rel=0.4, order=2).coefficients()["h"].size == 16
+    assert ISI(profile="gaussian", K=24).coefficients()["h"].size == 24
+
+
+def test_block_gaussian_scales_with_Rs():
+    h32 = ISI(profile="gaussian", Rs=32e9).coefficients()["h"]
+    h100 = ISI(profile="gaussian", Rs=100e9).coefficients()["h"]
+    assert np.max(np.abs(h32 - h100)) < TOL
+
+
+def test_block_echo():
+    blk = ISI(profile="echo", echoes=((2, 0.5),))
+    assert np.max(np.abs(blk.coefficients()["h"] - echo([(2, 0.5)]))) < TOL
+    assert blk.delay_samples == 0
+    assert ISI(profile="echo", echoes=((2, 0.5),), K=8).coefficients()["h"].size == 8
+
+
+def test_block_measured():
+    B = 0.6 * 32e9
+    blk = ISI(profile="measured", H_measured=_H_gauss(B))
+    assert np.max(np.abs(blk.coefficients()["h"] - gaussian(B, 64e9, 16))) < TOL
+
+
+def test_block_measured_requires_H():
+    with pytest.raises(ValueError):
+        ISI(profile="measured")
+
+
+@pytest.mark.parametrize(
+    "kw",
+    [
+        {},
+        {"taps": [1, 0.3j, -0.2]},
+        {"profile": "echo", "echoes": ((1, 0.3), (5, -0.2j))},
+        {"profile": "gaussian"},
+        {"profile": "gaussian", "B_rel": 0.3},
+        {"profile": "measured", "H_measured": _H_gauss(0.6 * 32e9)},
+    ],
+)
+def test_block_profiles_energy_and_shape(kw):
+    """Todos los perfiles: energía unitaria (salvo taps arbitrarios) y salida de la misma forma."""
+    blk = ISI(**kw)
+    h = blk.coefficients()["h"]
+    if blk.profile != "taps":
+        assert abs(np.sum(np.abs(h) ** 2) - 1) < TOL
+    x = _crandn(np.random.default_rng(8), 2, 256)
+    assert blk(x).shape == x.shape
+    assert np.iscomplexobj(blk(x))
+
+
+@pytest.mark.parametrize("kw", [{"Rs": 0.0}, {"sps": 0}, {"B_rel": 0.0}, {"profile": "gaussian", "K": 33}])
+def test_block_rejects_invalid_params(kw):
+    with pytest.raises(ValueError):
+        ISI(**{"profile": "gaussian", **kw})

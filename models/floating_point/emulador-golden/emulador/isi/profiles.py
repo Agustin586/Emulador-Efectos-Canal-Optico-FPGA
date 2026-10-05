@@ -7,6 +7,7 @@ símbolos vecinos pero no la cambia (la SNR la fija el bloque AWGN).
   - normalize_energy : h / sqrt(Σ|h|²).
   - echo             : canal de ecos discretos (multicamino).
   - gaussian         : pasa-bajos gaussiano diseñado en frecuencia (fase lineal).
+  - measured         : respuesta medida, como función H(f) o tabla (f, H).
   - K_rule           : cantidad de taps según el ancho de banda y el orden.
   - energy_captured  : qué fracción de la energía queda en los K taps.
 
@@ -94,11 +95,62 @@ def gaussian(B: float, fs: float, K: int, L: int = 8192) -> np.ndarray:
     """
     if B <= 0:
         raise ValueError(f"gaussian: B tiene que ser positivo: {B!r}")
-    if not (1 <= K <= L):
-        raise ValueError(f"gaussian: K tiene que cumplir 1 <= K <= L = {L}: {K!r}")
     f = np.fft.fftfreq(L, d=1 / fs)
     H = np.exp(-np.log(2) / 2 * f**2 / B**2)
-    h = np.fft.fftshift(np.fft.ifft(H)).real
+    return _centered_taps(H, K, real=True)
+
+
+def measured(H, fs: float, K: int, L: int = 8192) -> np.ndarray:
+    """Taps a partir de una respuesta en frecuencia medida, con el método del gaussiano.
+
+    - H: la respuesta, de una de dos formas:
+        - función ``H(f)`` que acepta un array de frecuencias en Hz;
+        - tabla ``(f, H)``: frecuencias en Hz (en cualquier orden, puede cubrir
+          solo parte de la banda) y valores complejos. Se interpola la magnitud
+          en dB y la fase desenrollada con ``np.interp``; fuera del rango de la
+          tabla, H = 0.
+    - fs: frecuencia de muestreo, Sa/s.
+    - K: cantidad de taps, 1 <= K <= L.
+    - L: largo de la FFT de diseño.
+    - return: array complejo de forma (K,), con energía unitaria.
+
+    Centra antes de truncar, como ``gaussian``, pero conserva la parte
+    imaginaria: una respuesta medida no tiene por qué ser simétrica. Con
+    H = H_G da los mismos taps que ``gaussian``.
+    """
+    f = np.fft.fftfreq(L, d=1 / fs)
+    if callable(H):
+        Hf = np.asarray(H(f), dtype=complex)
+    else:
+        Hf = _interp_table(H, f)
+    return _centered_taps(Hf, K)
+
+
+def _interp_table(table, f: np.ndarray) -> np.ndarray:
+    """Interpola una tabla (f_t, H_t) en f: magnitud en dB y fase desenrollada."""
+    f_t, H_t = (np.asarray(a) for a in table)
+    if f_t.ndim != 1 or f_t.shape != H_t.shape or f_t.size < 2:
+        raise ValueError(f"measured: la tabla (f, H) necesita dos arrays 1-D iguales: {f_t.shape}, {H_t.shape}")
+    order = np.argsort(f_t)
+    f_t, H_t = f_t[order], H_t[order].astype(complex)
+    mag_db = 20 * np.log10(np.maximum(np.abs(H_t), 1e-300))
+    phase = np.unwrap(np.angle(H_t))
+    Hf = 10 ** (np.interp(f, f_t, mag_db) / 20) * np.exp(1j * np.interp(f, f_t, phase))
+    Hf[(f < f_t[0]) | (f > f_t[-1])] = 0.0
+    return Hf
+
+
+def _centered_taps(H: np.ndarray, K: int, real: bool = False) -> np.ndarray:
+    """Antitransforma H (grilla de ``fftfreq``), centra y trunca K taps; normaliza.
+
+    h[k] = h̃[L/2 - ⌊K/2⌋ + k], con h̃ = fftshift(ifft(H)) (PDF Ec. 10 y 11).
+    """
+    L = H.size
+    if not (1 <= K <= L):
+        raise ValueError(f"K tiene que cumplir 1 <= K <= L = {L}: {K!r}")
+    h = np.fft.fftshift(np.fft.ifft(H))
+    if real:
+        h = h.real
     start = L // 2 - K // 2
     return normalize_energy(h[start : start + K])
 

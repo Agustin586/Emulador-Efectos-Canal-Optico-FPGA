@@ -778,7 +778,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 *Hito 2 · Perfiles de ISI y referencia ideal de la CD*
 - [x] A2.1 · `isi/profiles.py`: `normalize_energy`, `echo`, `K_rule` + tests
 - [x] A2.2 · `isi/profiles.py`: `gaussian`, `energy_captured` + tests
-- [ ] A2.3 · `isi/profiles.py`: `measured`; perfiles echo/gaussian/measured en el bloque + tests
+- [x] A2.3 · `isi/profiles.py`: `measured`; perfiles echo/gaussian/measured en el bloque + tests
 - [ ] B2.1 · `cd/reference.py` + tests de identidad, energía y reversibilidad
 - [ ] B2.2 · Test del pulso gaussiano
 - [ ] B2.3 · Notebook `03_cd_modelo_fisico`
