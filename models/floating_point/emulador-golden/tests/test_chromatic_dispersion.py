@@ -543,12 +543,12 @@ def test_beta3_residual_control_without_beta3(Rs):
     assert r.evm < 0.002
 
 
-@pytest.mark.parametrize("Rs, evm", [(32e9, 0.0069), (64e9, 0.022), (100e9, 0.083)])
+@pytest.mark.parametrize("Rs, evm", [(32e9, 0.0029), (64e9, 0.022), (100e9, 0.083)])
 def test_beta3_residual_ideal_timing(Rs, evm):
     """Decisión 23: con temporización ideal queda solo la ISI de β₃ (±10 %).
 
-    A 64 y 100 GBd la Tabla 17 (grilla de 2 sps) mezcla un error de
-    temporización: 5,5 % -> 2,2 % y 21 % -> 8,3 %.
+    La Tabla 17 (grilla de 2 sps) mezcla un error de temporización:
+    0,69 % -> 0,29 %, 5,5 % -> 2,2 % y 21 % -> 8,3 %.
     """
     r = beta3_residual(Scenario(Rs=Rs), D, 1000 * KM, S, timing="ideal")
     assert r.evm == pytest.approx(evm, rel=0.10)
@@ -557,7 +557,7 @@ def test_beta3_residual_ideal_timing(Rs, evm):
 
 def test_beta3_residual_ideal_is_monotonic_in_rate():
     """Con temporización ideal el residuo crece con la tasa (con la grilla de 2 sps no siempre)."""
-    evm = [beta3_residual(Scenario(Rs=Rs * 1e9), D, 500 * KM, S, timing="ideal").evm for Rs in (100, 125, 150, 175, 200)]
+    evm = [beta3_residual(Scenario(Rs=Rs * 1e9), D, 500 * KM, S, timing="ideal").evm for Rs in (32, 50, 64, 100, 150, 200)]
     assert all(a < b for a, b in zip(evm, evm[1:]))
 
 

@@ -42,7 +42,8 @@ def beta3_residual(
       queda el piso del RRC).
     - n_symbols, seed, mod: estímulo (``comm_signal``).
     - timing: "grid" (fases enteras de ``rx.recover``, como la Tabla 17) o
-      "ideal" (además, el mejor retardo fraccionario en [-1, 1] muestras).
+      "ideal" (además, el mejor retardo fraccionario, buscado en un período
+      de una muestra con resolución de 1e-4).
     - return: ``rx.recover`` (fase de muestreo, retardo entero y ganancia
       compleja óptimos; EVM con ``evm_opt``, que no supera 100 %).
 
@@ -71,9 +72,12 @@ def _recover_ideal_timing(rx: np.ndarray, sig) -> RxResult:
     def at(tau: float) -> RxResult:
         return recover(np.fft.ifft(X * np.exp(2j * np.pi * f * tau)), sig)
 
-    taus = np.linspace(-1.0, 1.0, 41)
+    # recover ya absorbe los corrimientos enteros: la EVM es periódica en tau con
+    # período 1 muestra, y con SNR alta el mínimo es muy angosto (~0,01 muestras)
+    taus = np.linspace(-0.5, 0.5, 101)
     evms = [at(t).evm for t in taus]
     i = int(np.argmin(evms))
-    lo, hi = taus[max(i - 1, 0)], taus[min(i + 1, taus.size - 1)]
-    fine = minimize_scalar(lambda t: at(t).evm, bounds=(lo, hi), method="bounded", options={"xatol": 1e-3})
+    fine = minimize_scalar(
+        lambda t: at(t).evm, bounds=(taus[i] - 0.01, taus[i] + 0.01), method="bounded", options={"xatol": 1e-4}
+    )
     return at(fine.x) if fine.fun < evms[i] else at(taus[i])
