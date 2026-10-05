@@ -40,6 +40,7 @@ Esta tabla es el **único registro de decisiones**:
 | 19 | Criterios de Bessel y Butterworth (A3) | A 2 sps, con B > 0,5·R<sub>s</sub>, el prototipo analógico no está limitado en banda en f<sub>s</sub>/2 y el −3 dB se corre (hasta 0,66 dB con m = 2; 0,4 dB con Bessel m = 6, B = 0,6·R<sub>s</sub>); a 4 sps, con K y d al doble, el desvío baja a 0,11 dB: es el muestreo, no el diseño. Criterios: **−3 dB ±0,3 dB y energía ≥ 98,5 %** a 2 sps para B ≤ 0,5·R<sub>s</sub> (m = 2…6) y para el perfil principal (B = 0,6·R<sub>s</sub>, m = 4), y a 4 sps para B = 0,3…0,8·R<sub>s</sub>. **Fidelidad** (< 0,5 dB y < 0,4 muestras) en la banda pasante \|f\| ≤ B, no en \|H<sub>P</sub>\| > −20 dB: cerca de Nyquist el FIR no puede seguir al prototipo y hay ceros profundos. Vale para m ≥ 3 y B ≤ 0,7·R<sub>s</sub> (Bessel m = 3, B = 0,8·R<sub>s</sub>: 0,82 dB). Perfil principal: 0,06 dB y 0,03 muestras | aceptada |
 | 20 | Perfil `cd_short` (A4) | Taps de Savory normalizados, R ≤ 31 (K ≤ 32 y R impar: ~55 km de SSMF a 64 GSa/s). Con **R = 1** (z ≤ 3 km) devuelve **[1]**: el único tap de Savory sería una rotación de 45° (NRMSE ~0,7 contra la referencia; [1] da ≤ 0,15). Cursor = tap central (los taps tienen todos la misma magnitud). **Es ilustrativo**: el truncamiento abrupto del chirp deja 2 a 5 dB de ondulación en la banda. NRMSE contra `cd_reference` (QAM16, 4096 símbolos, 2 sps), medido: 0,38 (10 km), 0,23 (20), 0,19 (30), 0,17 (40), 0,14 (55); con R = 3 es peor que no aplicar nada. Criterio de test: < 0,40 a 10 km, < 0,25 a 20–30 km, < 0,20 a 40–55 km | aceptada (propuesta, revisar) |
 | 21 | Overlap-save contra la referencia (B3) | Con N = `cd_N`, el error depende de cuánta energía tiene la señal cerca de Nyquist: las colas del chirp que no entran en N muestras son las de frecuencia instantánea alta. **QAM16** (32 GBd, 2 sps, roll-off 0,1): NRMSE < 1e-2 a 100/500/1000/2000 km (medido 1,6e-3, 5e-4, 3e-4, 2e-4); peor punto del rango de N = 128 (229 km, R = 127): 9,8e-3, criterio < 1,5e-2. **Ruido blanco** (toda la banda, peor caso): NRMSE < 2e-2 a las mismas distancias (medido 0,7e-2 a 1,4e-2), no < 1e-2; en 229 km llega a 5e-2 | aceptada (propuesta, revisar) |
+| 22 | SNR equivalente de la ISI (A5) | Instante óptimo: perfil diseñado con 16 sps (K y d ×8, mismo tiempo que a 2 sps) y la mejor de las 16 fases (`isi.isi_snr_eq`). Reproduce los 9 valores de la Tabla 4 del PDF con diferencia ≤ 0,1 dB; criterio **±0,2 dB** (el PDF redondea a 0,1). Grilla fija (2 sps, muestreo en el cursor entero): gaussiano igual al óptimo; Bessel m = 4 pierde 5 a 10 dB (10,1 / 10,2 / 18,3 dB con B = 0,4 / 0,5 / 0,6·R<sub>s</sub>); Butterworth m = 4 hasta 19 dB (7,7 / 15,3 / 6,6 dB) | aceptada (propuesta, revisar) |
 
 ---
 
@@ -486,7 +487,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 
   | Test | Cómo | Criterio |
   |---|---|---|
-  | Tabla 4 del PDF | SNR<sub>eq</sub> en el instante óptimo para los 9 casos | ±0,5 dB (**tolerancia propuesta, a confirmar**) |
+  | Tabla 4 del PDF | SNR<sub>eq</sub> en el instante óptimo para los 9 casos | ±0,2 dB (decisión 22; medido ≤ 0,1 dB) |
   | Orden entre perfiles | B = 0,4 R<sub>s</sub> | Butterworth < Bessel ≈ gaussiano |
 
 - **Notebook:** `02_isi_generica.ipynb` con la estructura de la Ref. §7 (objetivo, teoría, parámetros, simulación, validación, gráficos, conclusiones) y las figuras de la Ref. A.7.
@@ -796,7 +797,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] B3.2 · Bloque `ChromaticDispersion` (docstring corregido, `fs=64e9`) + tests + `run_block`
 
 *Hito 4 · Caracterización de la ISI y alcance del overlap-save*
-- [ ] A5.1 · Test de SNR equivalente contra la Tabla 4 del PDF
+- [x] A5.1 · Test de SNR equivalente contra la Tabla 4 del PDF
 - [ ] A5.2 · Notebook `02_isi_generica`
 - [ ] B4.1 · Tests del residuo de β₃ (Tabla 17 del PDF)
 - [ ] B4.2 · Notebook `04_cd_overlap_save` (Figs. 9 y 10, hardware)

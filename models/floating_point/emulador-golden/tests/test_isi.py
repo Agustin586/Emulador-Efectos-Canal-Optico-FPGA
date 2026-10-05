@@ -17,6 +17,7 @@ from emulador.isi import (
     gaussian,
     isi_apply,
     isi_apply_stream,
+    isi_snr_eq,
     measured,
     normalize_energy,
 )
@@ -652,3 +653,42 @@ def test_block_cd_short():
     assert np.array_equal(ISI(profile="cd_short").coefficients()["h"], np.array([1.0 + 0j]))
     with pytest.raises(ValueError):
         ISI(profile="cd_short", length_km=100.0)
+
+
+# --------------------------------------------------------------------------
+# Caracterización: SNR equivalente contra la Tabla 4 del PDF (A5.1)
+# --------------------------------------------------------------------------
+TABLE_4 = {  # PDF Tabla 4: SNR equivalente [dB] en el instante óptimo, roll-off 0,1
+    ("gaussian", 0.4): 16.2, ("bessel", 0.4): 15.7, ("butter", 0.4): 12.2,
+    ("gaussian", 0.5): 19.9, ("bessel", 0.5): 19.8, ("butter", 0.5): 18.9,
+    ("gaussian", 0.6): 23.0, ("bessel", 0.6): 23.3, ("butter", 0.6): 25.9,
+}  # fmt: skip
+
+
+@pytest.mark.parametrize("kind, B_rel", sorted(TABLE_4))
+def test_snr_eq_table_4(kind, B_rel):
+    """Decisión 22: ±0,2 dB (medido: diferencia máxima 0,1 dB)."""
+    optimal, _ = isi_snr_eq(kind, B_rel)
+    assert optimal == pytest.approx(TABLE_4[kind, B_rel], abs=0.2)
+
+
+def test_snr_eq_order_at_narrow_band():
+    """B = 0,4·Rs: Butterworth < Bessel ≈ gaussiano."""
+    g, b, w = (isi_snr_eq(k, 0.4)[0] for k in ("gaussian", "bessel", "butter"))
+    assert w < b - 3 and w < g - 3
+    assert abs(b - g) < 1.0
+
+
+def test_snr_eq_fixed_grid_loses_with_causal_profiles():
+    """Sobre la grilla fija de 2 sps el retardo fraccionario no se corrige.
+
+    El gaussiano (simétrico, cursor en una muestra entera) no pierde nada; el
+    Bessel pierde 5 a 10 dB y el Butterworth hasta 19 dB (B = 0,6·Rs: 25,8 -> 6,6).
+    """
+    for B_rel in (0.4, 0.5, 0.6):
+        opt, grid = isi_snr_eq("gaussian", B_rel)
+        assert abs(opt - grid) < 0.1
+    opt, grid = isi_snr_eq("butter", 0.6)
+    assert opt - grid > 10
+    opt, grid = isi_snr_eq("bessel", 0.4)
+    assert opt - grid > 3
