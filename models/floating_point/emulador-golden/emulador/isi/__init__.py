@@ -4,11 +4,13 @@
   - profiles : diseño de los taps h[k] (energía unitaria).
 """
 from .fir import isi_apply, isi_apply_stream
-from .profiles import K_rule, echo, normalize_energy
+from .profiles import K_rule, echo, energy_captured, gaussian, normalize_energy
 
 __all__ = [
     "K_rule",
     "echo",
+    "energy_captured",
+    "gaussian",
     "isi_apply",
     "isi_apply_stream",
     "normalize_energy",

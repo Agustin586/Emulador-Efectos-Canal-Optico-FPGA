@@ -1,9 +1,19 @@
 """ISI genérica (Parte A de GUIA_ISI_CD.md)."""
+from functools import partial
+
 import numpy as np
 import pytest
 
 from emulador.blocks import ISI
-from emulador.isi import K_rule, echo, isi_apply, isi_apply_stream, normalize_energy
+from emulador.isi import (
+    K_rule,
+    echo,
+    energy_captured,
+    gaussian,
+    isi_apply,
+    isi_apply_stream,
+    normalize_energy,
+)
 from emulador.stimuli import impulse
 
 TOL = 1e-12
@@ -205,3 +215,58 @@ def test_K_rule(B_rel, m, K):
     """Decisión 6: K = 32 si B <= 0,4 Rs y m >= 4; 16 si no (perfil principal: 16)."""
     for Rs in (32e9, 100e9):
         assert K_rule(B_rel * Rs, Rs, m) == K
+
+
+# --------------------------------------------------------------------------
+# profiles: gaussian, energy_captured (A2.2)
+# --------------------------------------------------------------------------
+RS = 32e9
+B_RELS = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+
+
+def _H_rel_db(h, f, fs):
+    """20·log10(|H(f)| / |H(0)|) con H(f) = Σ h[k] exp(-j 2π f k Ts)."""
+    k = np.arange(h.size)
+    H = lambda f_: np.sum(h * np.exp(-2j * np.pi * f_ * k / fs))  # noqa: E731
+    return 20 * np.log10(abs(H(f)) / abs(H(0.0)))
+
+
+@pytest.mark.parametrize("B_rel", B_RELS)
+@pytest.mark.parametrize("K", [16, 32])
+def test_gaussian_energy_and_3dB(B_rel, K):
+    fs = 2 * RS
+    h = gaussian(B_rel * RS, fs, K)
+    assert h.shape == (K,)
+    assert abs(np.sum(np.abs(h) ** 2) - 1) < TOL
+    # relativo a f = 0: la normalización por energía cambia |H(0)|
+    assert _H_rel_db(h, B_rel * RS, fs) == pytest.approx(-3.0, abs=0.3)
+
+
+@pytest.mark.parametrize("K", [15, 16, 32])
+def test_gaussian_symmetric_around_center(K):
+    h = gaussian(0.6 * RS, 2 * RS, K)
+    k0 = K // 2
+    assert int(np.argmax(np.abs(h))) == k0
+    for i in range(1, K - k0):
+        assert abs(h[k0 - i] - h[k0 + i]) < TOL
+
+
+def test_gaussian_scales_with_scenario():
+    """Mismo B/Rs y sps a 32 y 100 GBd: mismos taps (el diseño depende de B/fs)."""
+    h32 = gaussian(0.6 * 32e9, 2 * 32e9, 16)
+    h100 = gaussian(0.6 * 100e9, 2 * 100e9, 16)
+    assert np.max(np.abs(h32 - h100)) < TOL
+
+
+@pytest.mark.parametrize("B_rel", B_RELS)
+def test_gaussian_energy_captured(B_rel):
+    B = B_rel * RS
+    K = K_rule(B, RS, 4)
+    assert energy_captured(partial(gaussian, B, 2 * RS), K) >= 0.985
+
+
+def test_energy_captured_detects_truncation():
+    """Con banda angosta la respuesta es larga: truncada a pocos taps pierde energía."""
+    design = partial(gaussian, 0.1 * RS, 2 * RS)
+    assert energy_captured(design, 4) < 0.9
+    assert energy_captured(design, 32) > energy_captured(design, 4)

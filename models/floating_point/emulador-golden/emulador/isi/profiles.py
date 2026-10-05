@@ -6,11 +6,17 @@ símbolos vecinos pero no la cambia (la SNR la fija el bloque AWGN).
 
   - normalize_energy : h / sqrt(Σ|h|²).
   - echo             : canal de ecos discretos (multicamino).
+  - gaussian         : pasa-bajos gaussiano diseñado en frecuencia (fase lineal).
   - K_rule           : cantidad de taps según el ancho de banda y el orden.
+  - energy_captured  : qué fracción de la energía queda en los K taps.
+
+Diseño en frecuencia (Ref. A.3, PDF §3.5.3): se muestrea H(f) en la grilla de
+una FFT de L puntos, se antitransforma y se trunca a K taps. No se muestrea la
+h(t) continua: con B >= 0,5·Rs produce aliasing y el -3 dB se corre.
 """
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 
 import numpy as np
 
@@ -66,6 +72,56 @@ def echo(echoes: Iterable[tuple[int, complex]], K: int | None = None) -> np.ndar
     for d, a in echoes:
         h[int(d)] = a
     return normalize_energy(h)
+
+
+def gaussian(B: float, fs: float, K: int, L: int = 8192) -> np.ndarray:
+    """Pasa-bajos gaussiano con -3 dB en B, diseñado en frecuencia (PDF Ec. 10 y 11).
+
+        H_G(f) = exp(-(ln 2 / 2) · f² / B²)
+
+    Se antitransforma, se centra con ``fftshift`` y se trunca centrado:
+    h[k] = h̃[L/2 - ⌊K/2⌋ + k]. Es simétrico (fase lineal) con el cursor en
+    k0 = ⌊K/2⌋. Al ser simétrico y real, es el perfil de validación del método.
+
+    - B: ancho de banda a -3 dB, Hz.
+    - fs: frecuencia de muestreo, Sa/s.
+    - K: cantidad de taps, 1 <= K <= L.
+    - L: largo de la FFT de diseño.
+    - return: array real de forma (K,), con energía unitaria.
+
+    Solo depende de B/fs: el mismo B/Rs con el mismo sps da los mismos taps a
+    cualquier tasa de símbolos.
+    """
+    if B <= 0:
+        raise ValueError(f"gaussian: B tiene que ser positivo: {B!r}")
+    if not (1 <= K <= L):
+        raise ValueError(f"gaussian: K tiene que cumplir 1 <= K <= L = {L}: {K!r}")
+    f = np.fft.fftfreq(L, d=1 / fs)
+    H = np.exp(-np.log(2) / 2 * f**2 / B**2)
+    h = np.fft.fftshift(np.fft.ifft(H)).real
+    start = L // 2 - K // 2
+    return normalize_energy(h[start : start + K])
+
+
+def energy_captured(design: Callable[[int], np.ndarray], K: int, L: int = 8192) -> float:
+    """Fracción de la energía de la respuesta completa que queda en K taps.
+
+    - design: función K -> taps (por ejemplo ``partial(gaussian, B, fs)``),
+      que use una FFT de diseño de L puntos.
+    - K: cantidad de taps a evaluar.
+    - L: largo de la respuesta completa (se diseña con K = L, sin truncar).
+    - return: Σ|h_L[ventana]|² / Σ|h_L|², entre 0 y 1.
+
+    La ventana es la posición de los K taps dentro de la respuesta completa;
+    se ubica por correlación, así sirve para perfiles truncados centrados
+    (gaussiano) o desde el inicio (Bessel, Butterworth).
+    """
+    full = normalize_energy(design(L))
+    short = design(K)
+    # posición de la ventana: máximo de |Σ full[o + k]·conj(short[k])|
+    corr = np.abs(np.correlate(full, short, mode="valid"))
+    o = int(np.argmax(corr))
+    return float(np.sum(np.abs(full[o : o + K]) ** 2))
 
 
 def K_rule(B: float, Rs: float, m: int) -> int:
