@@ -19,6 +19,7 @@ from emulador.isi import (
     normalize_energy,
 )
 from emulador.isi.profiles import _interp_table
+from emulador.metrics import group_delay
 from emulador.stimuli import impulse
 
 TOL = 1e-12
@@ -476,3 +477,69 @@ def test_analog_is_causal_with_pre_delay():
 def test_analog_rejects_bad_kind():
     with pytest.raises(ValueError):
         analog("cheby", 0.6 * RS, 2 * RS, 4, 16)
+
+
+# --------------------------------------------------------------------------
+# profiles: fidelidad contra el prototipo analógico (A3.2)
+# --------------------------------------------------------------------------
+NF = 8192  # grilla fina para comparar respuestas
+
+
+def _fidelity(H_test, H_ref, fs, B, d=0.0):
+    """Peor error en |f| <= B: magnitud relativa a f = 0 [dB] y retardo [muestras].
+
+    H_test y H_ref en la grilla de fftfreq(NF, 1/fs). Al retardo de H_test se le
+    descuenta d (el pre-retardo del diseño).
+    """
+    f, tau_t = group_delay(H_test, fs)
+    _, tau_r = group_delay(H_ref, fs)
+    Ht, Hr = np.fft.fftshift(H_test), np.fft.fftshift(H_ref)
+    band = np.abs(f) <= B
+    mag_t = 20 * np.log10(np.abs(Ht[band]) / np.abs(Ht[NF // 2]))
+    mag_r = 20 * np.log10(np.abs(Hr[band]) / np.abs(Hr[NF // 2]))
+    d_err = (tau_t[band] - tau_r[band]) * fs - d
+    return np.max(np.abs(mag_t - mag_r)), np.max(np.abs(d_err))
+
+
+def _prototype_on_grid(kind, B, m, fs):
+    b, a = analog_prototype(kind, B, m)
+    _, H = signal.freqs(b, a, worN=2 * np.pi * np.fft.fftfreq(NF, 1 / fs))
+    return H
+
+
+@pytest.mark.parametrize("kind", KINDS)
+@pytest.mark.parametrize("m", [3, 4, 5, 6])
+@pytest.mark.parametrize("B_rel", [0.3, 0.4, 0.5, 0.6, 0.7])
+def test_analog_fidelity(kind, m, B_rel):
+    """Decisión 19: en la banda pasante, < 0,5 dB y < 0,4 muestras (m >= 3, B <= 0,7·Rs)."""
+    h, fs = _analog_h(kind, B_rel, m)
+    d = 6 if h.size >= 32 else 3
+    B = B_rel * RS
+    mag, dly = _fidelity(np.fft.fft(h, NF), _prototype_on_grid(kind, B, m, fs), fs, B, d)
+    assert mag < 0.5
+    assert dly < 0.4
+
+
+def test_analog_main_profile_fidelity():
+    """Perfil principal: 0,06 dB y 0,03 muestras (Ref. A.3: 0,04 dB y 0,03 muestras)."""
+    h, fs = _analog_h("bessel", 0.6, 4)
+    B = 0.6 * RS
+    mag, dly = _fidelity(np.fft.fft(h, NF), _prototype_on_grid("bessel", B, 4, fs), fs, B, 3)
+    assert mag < 0.1
+    assert dly < 0.05
+
+
+def test_bilinear_bessel_fails_the_same_criteria():
+    """Decisión 6: el Bessel digital (transformación bilineal) se aparta del
+    prototipo 0,53 dB y su retardo varía ~1 muestra en la banda; el diseño en
+    frecuencia, 0,06 dB y 0,03 muestras."""
+    fs, B, m = 2 * RS, 0.6 * RS, 4
+    bz, az = signal.bessel(m, B / (fs / 2), norm="mag")  # digital: bilineal
+    _, Hz = signal.freqz(bz, az, worN=2 * np.pi * np.fft.fftfreq(NF, 1 / fs) / fs)
+    HP = _prototype_on_grid("bessel", B, m, fs)
+    mag, _ = _fidelity(Hz, HP, fs, B)
+    f, tau_z = group_delay(Hz, fs)
+    _, tau_p = group_delay(HP, fs)
+    dt = ((tau_z - tau_p) * fs)[np.abs(f) <= B]
+    assert mag > 0.5
+    assert np.max(np.abs(dt - dt.mean())) > 0.4  # sin pre-retardo: se compara la variación

@@ -787,7 +787,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 
 *Hito 3 · Perfiles analógicos, CD corta y bloque `ChromaticDispersion`*
 - [x] A3.1 · `isi/profiles.py`: `analog` (Bessel/Butterworth) + tests de −3 dB y energía
-- [ ] A3.2 · Tests de fidelidad contra el prototipo analógico
+- [x] A3.2 · Tests de fidelidad contra el prototipo analógico
 - [ ] A3.3 · Perfiles bessel/butter en el bloque + regresión del perfil principal (`tests/data/`)
 - [ ] A4.1 · Perfil `cd_short` (requiere B1.4) + tests
 - [ ] B3.1 · `cd/overlap_save.py` (`cd_hbar`, `cd_overlap_save`) + test contra la referencia
