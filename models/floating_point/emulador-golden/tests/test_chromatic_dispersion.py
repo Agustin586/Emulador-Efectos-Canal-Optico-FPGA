@@ -2,9 +2,19 @@
 import numpy as np
 import pytest
 
-from emulador.cd import betas, cd_N, cd_R, cd_summary, cd_transfer, savory_taps
+from emulador.cd import (
+    betas,
+    cd_N,
+    cd_R,
+    cd_reference,
+    cd_reference_pad,
+    cd_summary,
+    cd_transfer,
+    savory_taps,
+)
 from emulador.config import C, D_si, HardwareParams, S_si, Scenario
-from emulador.metrics import group_delay
+from emulador.metrics import group_delay, nrmse
+from emulador.stimuli import comm_signal, impulse
 
 TOL = 1e-12
 FS = 64e9
@@ -241,3 +251,72 @@ def test_cd_summary_no_dispersion():
     s = cd_summary(Scenario(), 0.0, 100 * KM)
     assert s["R"] == 1
     assert s["L_D_km"] == np.inf
+
+
+# --------------------------------------------------------------------------
+# reference: CD ideal con una FFT de toda la señal (B2.1)
+# --------------------------------------------------------------------------
+def _qam(n_symbols=2048):
+    return comm_signal(Scenario(), mod="qam16", n_symbols=n_symbols).samples
+
+
+def test_reference_identity():
+    x = _qam()
+    assert nrmse(cd_reference(x, FS, D, LAM, 0.0), x) < 1e-14
+
+
+def test_reference_alignment_and_length():
+    """full=False: mismo largo que x y y[n] corresponde a x[n] (= full[pad + n])."""
+    x, z = _qam(), 100 * KM
+    y = cd_reference(x, FS, D, LAM, z, S=S)
+    y_full = cd_reference(x, FS, D, LAM, z, S=S, full=True)
+    pad = cd_reference_pad(FS, D, LAM, z)
+    assert y.shape == x.shape
+    assert np.array_equal(y, y_full[pad : pad + x.size])
+    # con β₃ = 0 el chirp es simétrico: un impulso se ensancha sin moverse
+    n0 = 300
+    y_imp = np.abs(cd_reference(impulse(600, n0), FS, D, LAM, z))
+    assert np.max(np.abs(y_imp[n0 - 50 : n0] - y_imp[n0 + 50 : n0 : -1])) < 1e-12
+
+
+def test_reference_energy_full():
+    """Decisión 18: full=True devuelve las L muestras, así la energía se conserva."""
+    x = _qam()
+    y = cd_reference(x, FS, D, LAM, 500 * KM, S=S, full=True)
+    assert abs(np.sum(np.abs(y) ** 2) / np.sum(np.abs(x) ** 2) - 1) < 1e-12
+
+
+@pytest.mark.parametrize("z_km", [100, 500, 2000])
+def test_reference_reversibility(z_km):
+    """(D, S) y después (-D, -S). Decisión 18: NRMSE < 1e-5, no 1e-12.
+
+    Las colas del chirp discreto decaen como ~1/n y el relleno de R + 64 no las
+    contiene: el piso crece con z y baja con el largo de la señal. Con 4096
+    símbolos QAM16: 1,0e-6 (100 km), 2,8e-6 (500 km) y 7,3e-6 (2000 km); con
+    2048 símbolos, 2000 km da 2,0e-5. Muy por debajo del 1e-2 del overlap-save.
+    """
+    x, z = _qam(4096), z_km * KM
+    y = cd_reference(x, FS, D, LAM, z, S=S, full=True)
+    back = cd_reference(y, FS, -D, LAM, z, S=-S, full=True)
+    off = cd_reference_pad(FS, D, LAM, z) + cd_reference_pad(FS, -D, LAM, z)
+    assert nrmse(back[off : off + x.size], x) < 1e-5
+
+
+def test_reference_reversibility_same_grid_exact():
+    """Sobre la misma grilla de L puntos, H* deshace H exactamente."""
+    x, z = _qam(), 500 * KM
+    y = cd_reference(x, FS, D, LAM, z, S=S, full=True)
+    H = cd_transfer(y.size, FS, D, LAM, z, S=S)
+    back = np.fft.ifft(np.fft.fft(y) * np.conj(H))
+    pad = cd_reference_pad(FS, D, LAM, z)
+    assert nrmse(back[pad : pad + x.size], x) < 1e-12
+    assert np.max(np.abs(back[: pad])) < 1e-12
+
+
+def test_reference_two_polarizations():
+    x = np.stack([_qam(), 1j * _qam()[::-1]])
+    for full in (False, True):
+        y = cd_reference(x, FS, D, LAM, 100 * KM, S=S, full=full)
+        assert y.shape[0] == 2
+        for p in range(2):
+            assert np.max(np.abs(y[p] - cd_reference(x[p], FS, D, LAM, 100 * KM, S=S, full=full))) < 1e-12

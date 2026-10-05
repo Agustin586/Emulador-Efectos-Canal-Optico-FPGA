@@ -36,6 +36,7 @@ Esta tabla es el **único registro de decisiones**:
 | 15 | RRC de los estímulos y del receptor | span = 64 símbolos por defecto (`shape`, `comm_signal`, `matched_filter`). Piso de EVM back-to-back medido en P3.3 con roll-off 0,1 y 2 sps: span 32 → 0,58 %, 48 → 0,27 %, **64 → 0,12 %**, 96 → 0,04 %. Criterio back-to-back: EVM < 0,5 % | aceptada |
 | 16 | Convención de la PRBS | LFSR de Fibonacci según ITU-T O.150 (x<sup>m</sup> + x<sup>k</sup> + 1): b[n] = b[n−m] ⊕ b[n−k]. Los primeros m bits de salida son la semilla, del MSB al LSB. Sin inversión por defecto; `invert=True` da la salida invertida que O.150 pide para PRBS-15/23/31. El generador del RTL tiene que usar la misma convención | aceptada |
 | 17 | Orden de trabajo de ISI y CD | **Intercalado por paso**, para presentar avances de los dos efectos: A1 → B1 → A2 → B2 → A3 → A4 → B3 → A5 → B4, agrupados en 4 hitos (checklist de §4). Se respetan las dependencias de cada paso | aceptada |
+| 18 | Referencia ideal de la CD (`cd_reference`) | Con `full=True` devuelve **las L muestras** del buffer de la FFT (x[n] ↔ y[pad + n], pad = R + 64 = `cd_reference_pad`), así la energía se conserva (rel. ~1e-16). Reversibilidad (D, S) → (−D, −S): **NRMSE < 1e-5**, no 1e-12: las colas del chirp discreto decaen como ~1/n, no entran en el relleno y dan la vuelta. El piso crece con z y baja con el largo de la señal (4096 símbolos QAM16: 1,0e-6 a 100 km, 2,8e-6 a 500 km, 7,3e-6 a 2000 km; con 2048 símbolos, 2,0e-5 a 2000 km). Sobre la misma grilla de L puntos, H* deshace H exacto (1e-12) | aceptada |
 
 ---
 
@@ -544,7 +545,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
      - pad = R + 64 ceros a cada lado;
      - L = 2^⌈log₂(len)⌉;
      - `ifft(fft(xp, L) · cd_transfer(L, …))`.
-  2. Con `full=False`, recortar al largo de x y alinear (y[n] corresponde a x[n]); con `full=True`, devolver todo, incluidas las colas.
+  2. Con `full=False`, recortar al largo de x y alinear (y[n] corresponde a x[n]); con `full=True`, devolver las L muestras del buffer, incluidas las colas (decisión 18).
   3. Operar sobre el último eje para aceptar `(2, n)`.
 - **Tests:**
 
@@ -552,7 +553,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
   |---|---|---|
   | Identidad | z = 0 | NRMSE ~10⁻¹⁵ |
   | Energía | `full=True`, z = 500 km | Σ\|y\|² = Σ\|x\|² (rel. 10⁻¹²) |
-  | Reversibilidad | (D, S) y luego (−D, −S) con `full=True` | NRMSE ~10⁻¹² |
+  | Reversibilidad | (D, S) y luego (−D, −S) con `full=True`, 4096 símbolos | NRMSE < 10⁻⁵ (decisión 18) |
   | Pulso gaussiano | T₀ = 15,6 ps, f<sub>s</sub> ≥ 256 GSa/s, z = 25…100 km; `rms_width(z)/rms_width(0)` contra √(1 + (z/L<sub>D</sub>)²) | rel. < 1 % |
 
 - **Notebook:** `03_cd_modelo_fisico.ipynb`:
@@ -779,7 +780,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] A2.1 · `isi/profiles.py`: `normalize_energy`, `echo`, `K_rule` + tests
 - [x] A2.2 · `isi/profiles.py`: `gaussian`, `energy_captured` + tests
 - [x] A2.3 · `isi/profiles.py`: `measured`; perfiles echo/gaussian/measured en el bloque + tests
-- [ ] B2.1 · `cd/reference.py` + tests de identidad, energía y reversibilidad
+- [x] B2.1 · `cd/reference.py` + tests de identidad, energía y reversibilidad
 - [ ] B2.2 · Test del pulso gaussiano
 - [ ] B2.3 · Notebook `03_cd_modelo_fisico`
 
