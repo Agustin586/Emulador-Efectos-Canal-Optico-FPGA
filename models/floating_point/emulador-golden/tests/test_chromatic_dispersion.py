@@ -6,6 +6,8 @@ from emulador.cd import (
     betas,
     cd_N,
     cd_R,
+    cd_hbar,
+    cd_overlap_save,
     cd_reference,
     cd_reference_pad,
     cd_summary,
@@ -341,3 +343,86 @@ def test_reference_gaussian_pulse_broadening(z_km):
     az = cd_reference(a0, fs, D, LAM, z)
     ratio = rms_width(az, t) / rms_width(a0, t)
     assert ratio == pytest.approx(np.sqrt(1 + (z / L_D) ** 2), rel=0.01)
+
+
+# --------------------------------------------------------------------------
+# overlap_save: cd_hbar, cd_overlap_save (B3.1)
+# --------------------------------------------------------------------------
+def _noise(n, seed=0, shape=()):
+    rng = np.random.default_rng(seed)
+    return (rng.standard_normal(shape + (n,)) + 1j * rng.standard_normal(shape + (n,))) / np.sqrt(2)
+
+
+def _ols_vs_reference(x, z, N=None):
+    """NRMSE del overlap-save contra la referencia, descontando el retardo N/2."""
+    N = N if N is not None else cd_N(FS, D, LAM, z)
+    y = cd_overlap_save(x, cd_hbar(N, FS, D, LAM, z, S=S))
+    r = cd_reference(x, FS, D, LAM, z, S=S)
+    m = x.size - 2 * N
+    return nrmse(y[N // 2 : N // 2 + m], r[:m])
+
+
+@pytest.mark.parametrize("z_km", [100, 500, 1000, 2000])
+def test_overlap_save_against_reference_qam(z_km):
+    """Decisión 21: con QAM16 y N = cd_N, NRMSE < 1e-2 (medido 1,6e-3 … 2e-4)."""
+    x = _qam(10_000)
+    assert _ols_vs_reference(x, z_km * KM) < 1e-2
+
+
+def test_overlap_save_worst_point_of_N128():
+    """229 km es el último z con N = 128 (R = 127): NRMSE 9,8e-3 con QAM16."""
+    assert cd_N(FS, D, LAM, 229 * KM) == 128
+    assert _ols_vs_reference(_qam(10_000), 229 * KM) < 1.5e-2
+
+
+@pytest.mark.parametrize("z_km", [100, 500, 1000, 2000])
+def test_overlap_save_against_reference_noise(z_km):
+    """Decisión 21: ruido blanco (toda la banda, peor caso), NRMSE < 2e-2 (medido 0,7e-2 … 1,4e-2).
+
+    Las colas del chirp que no entran en N muestras son las de frecuencia
+    instantánea cerca de Nyquist: la QAM16 casi no tiene energía ahí, el ruido sí.
+    """
+    assert _ols_vs_reference(_noise(20_000, seed=z_km), z_km * KM) < 2e-2
+
+
+def test_hbar_all_pass_and_delay_factor():
+    N, z = 256, 300 * KM
+    Hbar = cd_hbar(N, FS, D, LAM, z, S=S)
+    assert Hbar.shape == (2 * N,)
+    assert np.max(np.abs(np.abs(Hbar) - 1)) < TOL
+    k = np.fft.fftfreq(2 * N) * 2 * N
+    expected = cd_transfer(2 * N, FS, D, LAM, z, S=S) * np.exp(-2j * np.pi * k * (N / 2) / (2 * N))
+    assert np.max(np.abs(Hbar - expected)) < TOL
+
+
+def test_hbar_S0_identical_to_beta2_only():
+    assert np.array_equal(cd_hbar(128, FS, D, LAM, 100 * KM), cd_hbar(128, FS, D, LAM, 100 * KM, S=0.0))
+
+
+def test_overlap_save_zero_length_is_pure_delay():
+    """Con z = 0, H̄ es un retardo puro de N/2: la salida es x corrida N/2 muestras."""
+    N = 128
+    x = _noise(1000)
+    y = cd_overlap_save(x, cd_hbar(N, FS, D, LAM, 0.0))
+    assert y.size >= x.size
+    assert np.max(np.abs(y[: N // 2])) < 1e-12
+    assert np.max(np.abs(y[N // 2 : N // 2 + x.size - N // 2] - x[: x.size - N // 2])) < 1e-12
+
+
+def test_overlap_save_two_polarizations():
+    N, z = 256, 300 * KM
+    Hbar = cd_hbar(N, FS, D, LAM, z)
+    x = _noise(3000, shape=(2,))
+    y = cd_overlap_save(x, Hbar)
+    for p in range(2):
+        assert np.max(np.abs(y[p] - cd_overlap_save(x[p], Hbar))) < 1e-12
+
+
+def test_overlap_save_impulse_is_centered_chirp():
+    """Un impulso en n0 sale como el chirp centrado en n0 + N/2 (β₃ = 0: simétrico en módulo)."""
+    N, z, n0 = 512, 400 * KM, 100
+    x = np.zeros(4 * N, complex)
+    x[n0] = 1.0
+    y = np.abs(cd_overlap_save(x, cd_hbar(N, FS, D, LAM, z)))
+    c = n0 + N // 2
+    assert np.max(np.abs(y[c - 100 : c] - y[c + 100 : c : -1])) < 1e-12
