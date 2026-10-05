@@ -36,3 +36,16 @@ def test_plots_draw_and_save(tmp_path):
 def test_fig_dir_is_in_docs():
     assert plots.FIG_DIR.parts[-3:] == ("docs", "golden_model", "figuras")
     assert plots.STYLE.exists()
+
+
+def test_save_fig_is_reproducible(tmp_path, monkeypatch):
+    """Sin fecha de creación en el PDF: volver a correr un notebook no genera cambios en git."""
+    fig, ax = plt.subplots()
+    ax.plot([0, 1], [1, 0])
+    plots.save_fig(fig, "a", outdir=tmp_path)
+    # matplotlib toma la fecha de SOURCE_DATE_EPOCH si existe: simula otro momento
+    monkeypatch.setenv("SOURCE_DATE_EPOCH", "1000000000")
+    plots.save_fig(fig, "b", outdir=tmp_path)
+    plt.close(fig)
+    assert (tmp_path / "a.pdf").read_bytes() == (tmp_path / "b.pdf").read_bytes()
+    assert (tmp_path / "a.png").read_bytes() == (tmp_path / "b.png").read_bytes()

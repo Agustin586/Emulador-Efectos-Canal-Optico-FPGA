@@ -86,6 +86,9 @@ def save_fig(fig, name: str, pdf: bool = True, outdir: Path | str | None = None,
     outdir por defecto: docs/golden_model/figuras/. Devuelve la ruta del .png.
     dpi    : resolución del .png (None -> la del estilo, 200). Los ojos, con
              cientos de trazas semitransparentes, comprimen mal: usar ~110.
+
+    El .pdf se guarda sin fecha de creación: si la figura no cambia, el archivo
+    sale idéntico byte a byte y volver a correr un notebook no ensucia git.
     """
     outdir = Path(outdir) if outdir is not None else FIG_DIR
     outdir.mkdir(parents=True, exist_ok=True)
@@ -95,5 +98,5 @@ def save_fig(fig, name: str, pdf: bool = True, outdir: Path | str | None = None,
     else:
         fig.savefig(png, dpi=dpi)
     if pdf:
-        fig.savefig(outdir / f"{name}.pdf")
+        fig.savefig(outdir / f"{name}.pdf", metadata={"CreationDate": None})
     return png
