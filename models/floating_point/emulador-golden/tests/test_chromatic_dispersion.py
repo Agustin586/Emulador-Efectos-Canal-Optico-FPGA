@@ -4,6 +4,7 @@ import pytest
 
 from emulador.blocks import ISI, ChromaticDispersion
 from emulador.cd import (
+    beta3_residual,
     betas,
     cd_N,
     cd_R,
@@ -513,3 +514,36 @@ def test_from_scenario():
     isi = ISI.from_scenario(esc, profile="gaussian")
     assert (isi.Rs, isi.sps) == (100e9, 2)
     assert np.max(np.abs(isi.coefficients()["h"] - ISI(profile="gaussian").coefficients()["h"])) < TOL
+
+
+# --------------------------------------------------------------------------
+# Residuo de β₃ tras compensar solo β₂ (B4.1, PDF Tabla 17)
+# --------------------------------------------------------------------------
+@pytest.mark.parametrize("Rs, evm", [(32e9, 0.007), (64e9, 0.056), (100e9, 0.22)])
+def test_beta3_residual_table_17(Rs, evm):
+    """1000 km de SSMF (S = 0,057), compensación con -D y S = 0. ±5 % relativo.
+
+    Medido: 0,69 / 5,49 / 21,2 %.
+    """
+    r = beta3_residual(Scenario(Rs=Rs), D, 1000 * KM, S)
+    assert r.evm == pytest.approx(evm, rel=0.05)
+
+
+def test_beta3_residual_200GBd_destroys_constellation():
+    """Decisión 23: EVM 69 % (SNR equivalente 3,2 dB). Con evm_opt (ganancia
+    óptima) la EVM no puede pasar de 100 %, así que el criterio es > 50 %."""
+    r = beta3_residual(Scenario(Rs=200e9), D, 1000 * KM, S)
+    assert r.evm > 0.5
+
+
+@pytest.mark.parametrize("Rs", [32e9, 100e9])
+def test_beta3_residual_control_without_beta3(Rs):
+    """S = 0 en el canal y en la compensación: queda el piso del RRC (~0,1 %)."""
+    r = beta3_residual(Scenario(Rs=Rs), D, 1000 * KM, 0.0)
+    assert r.evm < 0.002
+
+
+def test_beta3_residual_grows_with_rate_and_length():
+    evm = {(Rs, z): beta3_residual(Scenario(Rs=Rs), D, z * KM, S).evm for Rs in (64e9, 100e9) for z in (500, 1000)}
+    assert evm[64e9, 500] < evm[64e9, 1000] < evm[100e9, 1000]
+    assert evm[100e9, 500] < evm[100e9, 1000]
