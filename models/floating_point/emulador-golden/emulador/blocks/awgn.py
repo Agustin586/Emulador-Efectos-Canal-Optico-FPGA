@@ -10,6 +10,7 @@ Modelo:
 Parámetros:
     snr_db : relación señal/ruido en dB (por defecto 30.0 dB).
              Corresponde a la SNR por muestra en la banda de simulación.
+             ``+inf`` desactiva el ruido; ``-inf`` y ``NaN`` son inválidos.
     seed   : semilla para el generador pseudoaleatorio (default_rng).
 """
 from __future__ import annotations
@@ -28,9 +29,13 @@ class AWGN(Block):
     seed: int = 0
     name: ClassVar[str] = "awgn"
 
+    def __post_init__(self) -> None:
+        if np.isnan(self.snr_db) or np.isneginf(self.snr_db):
+            raise ValueError("awgn: snr_db debe ser finito o +inf")
+
     def process(self, x: np.ndarray) -> np.ndarray:
         p_signal = float(np.mean(np.abs(x) ** 2))
-        if p_signal == 0.0 or self.snr_db is None or np.isposinf(self.snr_db) or np.isneginf(self.snr_db):
+        if p_signal == 0.0 or np.isposinf(self.snr_db):
             return x
 
         snr_linear = 10.0 ** (self.snr_db / 10.0)

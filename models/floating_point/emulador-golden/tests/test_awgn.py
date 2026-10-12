@@ -73,11 +73,11 @@ def test_awgn_dual_polarization():
 
 
 def test_awgn_null_case():
-    """Comprueba el caso nulo: SNR infinita (+inf dB) o señal de potencia nula devuelven la señal intacta."""
+    """Comprueba el caso nulo: +inf dB o potencia nula devuelven la señal intacta."""
     sig = gen_signal("qam16", n_symbols=1024, sps=2)
     x = sig.samples
 
-    # Caso SNR infinita (+inf dB con float y np.inf): no debe inyectar ninguna potencia de ruido
+    # +inf dB significa ruido nulo.
     y_inf = AWGN(snr_db=float("inf"), seed=42)(x)
     assert np.array_equal(y_inf, x)
 
@@ -89,3 +89,9 @@ def test_awgn_null_case():
     y_zeros = AWGN(snr_db=20.0, seed=42)(zeros)
     assert np.array_equal(y_zeros, zeros)
 
+
+def test_awgn_invalid_snr():
+    """-inf y NaN no representan una SNR válida y deben rechazarse."""
+    for snr in (-np.inf, np.nan):
+        with pytest.raises(ValueError, match="snr_db"):
+            AWGN(snr_db=snr)

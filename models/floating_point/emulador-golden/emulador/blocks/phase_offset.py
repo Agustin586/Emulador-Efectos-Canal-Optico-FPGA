@@ -25,5 +25,9 @@ class PhaseOffset(Block):
     delta_theta_rad: float = 0.0
     name = "phase_offset"
 
+    def __post_init__(self) -> None:
+        if not np.isfinite(self.delta_theta_rad):
+            raise ValueError("phase_offset: delta_theta_rad debe ser finito")
+
     def process(self, x: np.ndarray) -> np.ndarray:
         return x * np.exp(1j * self.delta_theta_rad)

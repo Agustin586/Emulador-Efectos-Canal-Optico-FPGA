@@ -26,3 +26,8 @@ def test_phase_offset_zero():
 
     y = PhaseOffset(delta_theta_rad=0.0)(x)
     assert np.array_equal(y, x)
+
+
+def test_phase_offset_invalid_angle():
+    with pytest.raises(ValueError, match="delta_theta_rad"):
+        PhaseOffset(delta_theta_rad=np.nan)

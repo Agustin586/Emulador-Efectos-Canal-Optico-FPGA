@@ -74,8 +74,9 @@ def test_phase_noise_null_case():
     # Parámetros por defecto (linewidth_hz=0.0)
     assert np.array_equal(PhaseNoise()(x), x)
 
-    # Linewidth negativo (caso borde no-op)
-    assert np.array_equal(PhaseNoise(linewidth_hz=-10e3, fs=2e9)(x), x)
+    # Un linewidth negativo es una configuración inválida.
+    with pytest.raises(ValueError, match="linewidth_hz"):
+        PhaseNoise(linewidth_hz=-10e3, fs=2e9)
 
     # Polarización dual en caso nulo
     x_dual = np.stack([x, 2.0 * x])
@@ -133,3 +134,32 @@ def test_phase_noise_seed_reproducibility():
 
     assert np.array_equal(y1, y2)
     assert not np.allclose(y1, y3)
+
+
+def test_phase_noise_chunked_processing_matches_single_run():
+    """La fase y el RNG deben continuar correctamente entre chunks."""
+    rng = np.random.default_rng(8)
+    x = rng.normal(size=4096) + 1j * rng.normal(size=4096)
+
+    whole = PhaseNoise(linewidth_hz=500e3, fs=2e9, seed=21)(x)
+    chunked_block = PhaseNoise(linewidth_hz=500e3, fs=2e9, seed=21)
+    chunked = np.concatenate([chunked_block(x[:1300]), chunked_block(x[1300:])])
+
+    assert np.allclose(chunked, whole, rtol=0.0, atol=1e-13)
+
+
+def test_phase_noise_reset_restarts_trajectory():
+    """reset() debe restaurar la misma trayectoria para la misma semilla."""
+    x = np.ones(512, dtype=complex)
+    block = PhaseNoise(linewidth_hz=500e3, fs=2e9, seed=22)
+    first = block(x)
+    block.reset()
+    second = block(x)
+
+    assert np.array_equal(first, second)
+
+
+def test_phase_noise_invalid_parameters():
+    for linewidth, fs in [(np.nan, 2e9), (-1.0, 2e9), (1.0, 0.0), (1.0, -1.0), (1.0, np.nan)]:
+        with pytest.raises(ValueError, match="phase_noise"):
+            PhaseNoise(linewidth_hz=linewidth, fs=fs)
