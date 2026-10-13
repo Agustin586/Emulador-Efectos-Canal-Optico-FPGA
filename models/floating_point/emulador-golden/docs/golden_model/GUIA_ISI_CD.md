@@ -466,7 +466,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
   | Límite | z = 100 km a 64 GSa/s (R = 55) | `ValueError` |
   | Contra la referencia | NRMSE contra `cd_reference`, QAM16, 4096 símbolos | < 0,40 (10 km), < 0,25 (20–30 km), < 0,20 (40–55 km) (decisión 20) |
 
-- **Notebook:** `02_isi_generica.ipynb`: coeficientes del chirp y comparación con la CD en frecuencia.
+- **Notebook:** no va en `02_isi_generica.ipynb` (se quitó: alcanza con los perfiles causales). La comparación con la CD en frecuencia queda en los tests (decisión 20) y la curva del FIR truncado en el notebook 04.
 - **Errores a evitar:** usar el signo de Savory tal cual sin verificarlo contra `cd_transfer` (Savory escribe el compensador).
 - **Verificar:** `pytest tests/test_isi.py -k cd_short -v`.
 - **Listo cuando:** los tests pasan y el criterio contra la referencia quedó agregado a §1.
@@ -564,7 +564,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 - **Notebook:** `03_cd_modelo_fisico.ipynb`:
   - ensanchamiento del gaussiano (Fig. 5 del PDF);
   - constelaciones QAM16 con CD de 1 y 5 km, y 500 km + H* (Fig. 6);
-  - chirp h<sub>T</sub>[n] para 100 km (Fig. 7).
+  - (el chirp h<sub>T</sub>[n] de la Fig. 7 se quitó: los taps de Savory no se usan en el bloque de CD; quedan en los tests y en la curva del FIR truncado del notebook 04).
 - **Errores a evitar:** hacer `ifft(fft(x)·H)` sin relleno (las colas dan la vuelta); muestrear el gaussiano a 64 GSa/s con T₀ ≈ T<sub>s</sub> (aliasing: usar f<sub>s</sub> alta o T₀ ≥ 3·T<sub>s</sub>); medir la energía sobre la salida recortada.
 - **Verificar:** `pytest tests/test_chromatic_dispersion.py -k "reference or gauss" -v`.
 - **Listo cuando:** los tests pasan y las Figs. 5–7 están reproducidas.
