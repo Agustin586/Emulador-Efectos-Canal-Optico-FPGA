@@ -106,34 +106,6 @@ def cd_N(
     return N
 
 
-def savory_taps(fs: float, D: float, lam: float, z: float) -> np.ndarray:
-    """Taps del FIR que emula la CD en el tiempo (Savory, 2008; PDF Ec. 24 a 26).
-
-        h[n] = sqrt(j c Ts² / (D λ² z)) · exp(-j π c Ts² n² / (D λ² z)),
-        n = -(R-1)/2 … (R-1)/2
-
-    Es la respuesta al impulso de H_CD(f) = exp(+j π D λ² z f² / c) muestreada y
-    truncada a R = ``cd_R`` taps: **emula** el canal con la convención positiva
-    (Savory escribe el compensador, que es la conjugada). Sin límite de largo;
-    el perfil ``cd_short`` de la ISI (paso A4) exige R <= 32 y normaliza.
-
-    - fs, D, lam, z: como en ``cd_R``. D puede ser negativo (da la conjugada).
-    - return: array complejo de forma (R,), con el tap central en n = 0
-      (índice R // 2).
-
-    Con D·z = 0 devuelve [1] (sin dispersión). La truncación deja la energía
-    algo por debajo de 1 (0,90 con 10 km a 64 GSa/s, 0,99 con 100 km) y deforma
-    la fase cuando R es chico.
-    """
-    a = D * lam**2 * z
-    if a == 0.0:
-        return np.array([1.0 + 0j])
-    Ts = 1 / fs
-    R = cd_R(fs, D, lam, z)
-    n = np.arange(-(R // 2), R // 2 + 1)
-    return np.sqrt(1j * C * Ts**2 / a) * np.exp(-1j * np.pi * C * Ts**2 * n**2 / a)
-
-
 def cd_summary(esc: Scenario, D: float, z: float, S: float = 0.0) -> dict:
     """Magnitudes derivadas de una configuración de CD (PDF Tabla 15).
 

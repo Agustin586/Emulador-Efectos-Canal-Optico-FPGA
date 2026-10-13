@@ -13,9 +13,7 @@ Parámetros:
                  "measured" : respuesta medida ``H_measured``;
                  "bessel"   : Bessel de orden ``order`` con -3 dB en B (fase casi
                               lineal; perfil principal con m = 4, B = 0,6·Rs, K = 16);
-                 "butter"   : Butterworth de orden ``order`` (perfil de estrés);
-                 "cd_short" : CD de ``length_km`` con taps de Savory (R <= 31;
-                              aproximación ilustrativa, decisión 20).
+                 "butter"   : Butterworth de orden ``order`` (perfil de estrés).
                Todos menos "taps" salen con energía unitaria.
   taps       : coeficientes h[k], complejos (profile="taps").
   Rs         : tasa de símbolos [Bd]; con sps da fs = Rs·sps.
@@ -28,12 +26,9 @@ Parámetros:
                amplitud compleja, |a_i| < 1.
   H_measured : respuesta medida del perfil "measured": función H(f) con f en Hz,
                o tabla (f, H).
-  D_ps_nm_km, wavelength_nm, length_km : fibra del perfil "cd_short". Por
-               defecto 17 ps/(nm·km), 1550 nm y 0 km (sin efecto).
 
 Retardo (GUIA_ISI_CD.md §1, decisión 8):
-  - ``delay_samples`` es el cursor k0 = argmax |h[k]| (con "cd_short", cuyos
-    taps tienen todos la misma magnitud, el tap central K // 2).
+  - ``delay_samples`` es el cursor k0 = argmax |h[k]|.
   - ``process_hw(x)`` es el FIR causal, como el hardware: la salida sale
     retrasada k0 muestras. Es la salida que se exporta para el RTL.
   - ``process(x)`` (y ``__call__``) devuelve la salida alineada: el cursor cae en
@@ -50,11 +45,11 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from ..common import Block
-from ..config import D_si, Scenario
-from ..isi import K_rule, analog, cd_short, echo, gaussian, isi_apply, measured
+from ..config import Scenario
+from ..isi import K_rule, analog, echo, gaussian, isi_apply, measured
 from ..isi.profiles import K_MAX
 
-PROFILES = ("taps", "echo", "gaussian", "measured", "bessel", "butter", "cd_short")
+PROFILES = ("taps", "echo", "gaussian", "measured", "bessel", "butter")
 
 
 @dataclass
@@ -68,9 +63,6 @@ class ISI(Block):
     K: int | None = None
     echoes: tuple = ()
     H_measured: object = None
-    D_ps_nm_km: float = 17.0
-    wavelength_nm: float = 1550.0
-    length_km: float = 0.0
     name = "isi"
 
     def __post_init__(self):
@@ -82,15 +74,12 @@ class ISI(Block):
         if h.ndim != 1 or not (1 <= h.size <= K_MAX):
             raise ValueError(f"isi: taps tiene que ser 1-D con 1 <= K <= {K_MAX}: forma {h.shape}")
         self.h = h
-        if self.profile == "cd_short":
-            self.delay_samples = h.size // 2
-        else:
-            self.delay_samples = int(np.argmax(np.abs(h)))
+        self.delay_samples = int(np.argmax(np.abs(h)))
 
     @classmethod
     def from_scenario(cls, esc: Scenario, **kw) -> ISI:
-        """Toma Rs, sps y λ del escenario; el resto de los campos va en ``kw``."""
-        return cls(Rs=esc.Rs, sps=esc.sps, wavelength_nm=esc.wavelength * 1e9, **kw)
+        """Toma Rs y sps del escenario; el resto de los campos va en ``kw``."""
+        return cls(Rs=esc.Rs, sps=esc.sps, **kw)
 
     def _design(self) -> np.ndarray:
         """Taps según ``profile``, en SI (fs = Rs·sps, B = B_rel·Rs)."""
@@ -99,8 +88,6 @@ class ISI(Block):
         if self.profile == "echo":
             return echo(self.echoes, K=self.K)
         fs = self.Rs * self.sps
-        if self.profile == "cd_short":
-            return cd_short(fs, D_si(self.D_ps_nm_km), self.wavelength_nm / 1e9, self.length_km * 1e3)
         B = self.B_rel * self.Rs
         K = self.K if self.K is not None else K_rule(B, self.Rs, self.order)
         if not (1 <= K <= K_MAX):

@@ -38,10 +38,11 @@ Esta tabla es el **único registro de decisiones**:
 | 17 | Orden de trabajo de ISI y CD | **Intercalado por paso**, para presentar avances de los dos efectos: A1 → B1 → A2 → B2 → A3 → A4 → B3 → A5 → B4, agrupados en 4 hitos (checklist de §4). Se respetan las dependencias de cada paso | aceptada |
 | 18 | Referencia ideal de la CD (`cd_reference`) | Con `full=True` devuelve **las L muestras** del buffer de la FFT (x[n] ↔ y[pad + n], pad = R + 64 = `cd_reference_pad`), así la energía se conserva (rel. ~1e-16). Reversibilidad (D, S) → (−D, −S): **NRMSE < 1e-5**, no 1e-12: las colas del chirp discreto decaen como ~1/n, no entran en el relleno y dan la vuelta. El piso crece con z y baja con el largo de la señal (4096 símbolos QAM16: 1,0e-6 a 100 km, 2,8e-6 a 500 km, 7,3e-6 a 2000 km; con 2048 símbolos, 2,0e-5 a 2000 km). Sobre la misma grilla de L puntos, H* deshace H exacto (1e-12) | aceptada |
 | 19 | Criterios de Bessel y Butterworth (A3) | A 2 sps, con B > 0,5·R<sub>s</sub>, el prototipo analógico no está limitado en banda en f<sub>s</sub>/2 y el −3 dB se corre (hasta 0,66 dB con m = 2; 0,4 dB con Bessel m = 6, B = 0,6·R<sub>s</sub>); a 4 sps, con K y d al doble, el desvío baja a 0,11 dB: es el muestreo, no el diseño. Criterios: **−3 dB ±0,3 dB y energía ≥ 98,5 %** a 2 sps para B ≤ 0,5·R<sub>s</sub> (m = 2…6) y para el perfil principal (B = 0,6·R<sub>s</sub>, m = 4), y a 4 sps para B = 0,3…0,8·R<sub>s</sub>. **Fidelidad** (< 0,5 dB y < 0,4 muestras) en la banda pasante \|f\| ≤ B, no en \|H<sub>P</sub>\| > −20 dB: cerca de Nyquist el FIR no puede seguir al prototipo y hay ceros profundos. Vale para m ≥ 3 y B ≤ 0,7·R<sub>s</sub> (Bessel m = 3, B = 0,8·R<sub>s</sub>: 0,82 dB). Perfil principal: 0,06 dB y 0,03 muestras | aceptada |
-| 20 | Perfil `cd_short` (A4) | Taps de Savory normalizados, R ≤ 31 (K ≤ 32 y R impar: ~55 km de SSMF a 64 GSa/s). Con **R = 1** (z ≤ 3 km) devuelve **[1]**: el único tap de Savory sería una rotación de 45° (NRMSE ~0,7 contra la referencia; [1] da ≤ 0,15). Cursor = tap central (los taps tienen todos la misma magnitud). **Es ilustrativo**: el truncamiento abrupto del chirp deja 2 a 5 dB de ondulación en la banda. NRMSE contra `cd_reference` (QAM16, 4096 símbolos, 2 sps), medido: 0,38 (10 km), 0,23 (20), 0,19 (30), 0,17 (40), 0,14 (55); con R = 3 es peor que no aplicar nada. Criterio de test: < 0,40 a 10 km, < 0,25 a 20–30 km, < 0,20 a 40–55 km | aceptada (propuesta, revisar) |
+| 20 | Perfil `cd_short` (A4) | Taps de Savory normalizados, R ≤ 31 (K ≤ 32 y R impar: ~55 km de SSMF a 64 GSa/s). Con **R = 1** (z ≤ 3 km) devuelve **[1]**: el único tap de Savory sería una rotación de 45° (NRMSE ~0,7 contra la referencia; [1] da ≤ 0,15). Cursor = tap central (los taps tienen todos la misma magnitud). **Es ilustrativo**: el truncamiento abrupto del chirp deja 2 a 5 dB de ondulación en la banda. NRMSE contra `cd_reference` (QAM16, 4096 símbolos, 2 sps), medido: 0,38 (10 km), 0,23 (20), 0,19 (30), 0,17 (40), 0,14 (55); con R = 3 es peor que no aplicar nada. Criterio de test: < 0,40 a 10 km, < 0,25 a 20–30 km, < 0,20 a 40–55 km | **reemplazada por la 24** (perfil eliminado) |
 | 21 | Overlap-save contra la referencia (B3) | Con N = `cd_N`, el error depende de cuánta energía tiene la señal cerca de Nyquist: las colas del chirp que no entran en N muestras son las de frecuencia instantánea alta. **QAM16** (32 GBd, 2 sps, roll-off 0,1): NRMSE < 1e-2 a 100/500/1000/2000 km (medido 1,6e-3, 5e-4, 3e-4, 2e-4); peor punto del rango de N = 128 (229 km, R = 127): 9,8e-3, criterio < 1,5e-2. **Ruido blanco** (toda la banda, peor caso): NRMSE < 2e-2 a las mismas distancias (medido 0,7e-2 a 1,4e-2), no < 1e-2; en 229 km llega a 5e-2 | aceptada (propuesta, revisar) |
 | 22 | SNR equivalente de la ISI (A5) | Instante óptimo: perfil diseñado con 16 sps (K y d ×8, mismo tiempo que a 2 sps) y la mejor de las 16 fases (`isi.isi_snr_eq`). Reproduce los 9 valores de la Tabla 4 del PDF con diferencia ≤ 0,1 dB; criterio **±0,2 dB** (el PDF redondea a 0,1). Grilla fija (2 sps, muestreo en el cursor entero): gaussiano igual al óptimo; Bessel m = 4 pierde 5 a 10 dB (10,1 / 10,2 / 18,3 dB con B = 0,4 / 0,5 / 0,6·R<sub>s</sub>); Butterworth m = 4 hasta 19 dB (7,7 / 15,3 / 6,6 dB) | aceptada (propuesta, revisar) |
 | 23 | Residuo de β₃ (B4, Tabla 17) | Canal `cd_reference(D, S = 0,057, full=True)` → compensación `cd_reference(−D, S = 0, full=True)` → `rx.recover` (`cd.beta3_residual`). β₃ agrega un retardo global con parte fraccionaria (τ(ω) = β₃zω²/2 tiene media no nula). **`timing="grid"`** (fases enteras a 2 sps, como el PDF): a 1000 km, EVM 0,69 / 5,49 / 21,2 % a 32 / 64 / 100 GBd (PDF: 0,7 / 5,6 / 22 %), criterio ±5 %. **`timing="ideal"`** (además, el mejor retardo fraccionario continuo, como una recuperación de temporización perfecta): 0,29 / 2,2 / 8,3 %, criterio ±10 %; es la ISI residual de β₃ sola y crece monótonamente con la tasa. **La Tabla 17 mezcla un error de temporización del receptor** (0,69 → 0,29 %; 5,5 → 2,2 %; 21 → 8,3 %). A 200 GBd: EVM 69 % con las dos (SNR equivalente 3,2 dB), no > 100 %: `evm_opt` usa la ganancia óptima y no pasa de 100 %. Criterio: EVM > 50 %. Control sin β₃: 0,12 %, criterio < 0,2 % | aceptada (propuesta, revisar) |
+| 24 | Taps de Savory y perfil `cd_short` | **Eliminados** del código, de los tests y de los notebooks (2026-10-12): el perfil era solo ilustrativo (decisión 20) y no se usa. La CD se emula únicamente con el bloque `ChromaticDispersion` (overlap-save). El bloque `ISI` pierde los campos `D_ps_nm_km`, `wavelength_nm` y `length_km`, que solo usaba ese perfil. La justificación del overlap-save frente a un FIR en el tiempo queda en el largo del chirp R (55 taps a 100 km, 1117 a 2000 km, contra K ≤ 32) | aceptada |
 
 ---
 
@@ -79,7 +80,7 @@ La Ref. §4 propone una estructura genérica. Acá se adapta al repositorio, que
 | `emulador/graficos.py`, `estilo.mplstyle` | `emulador/plots.py`, `emulador/style.mplstyle` | crear | Reusa la idea de `scripts/run_block.plot_before_after`; paleta `#14213D`, `#B35418`, `#2B5C9E` |
 | `emulador/isi/perfiles.py` | `emulador/isi/profiles.py` | crear | Funciones puras de diseño (SI) |
 | `emulador/isi/bloque.py` | `emulador/isi/fir.py` + `emulador/blocks/isi.py` | crear / completar esqueleto | `fir.py`: `isi_apply`, `isi_apply_stream`. El bloque `ISI` sigue en `REGISTRY["isi"]` |
-| `emulador/cd/fisica.py` | `emulador/cd/physics.py` | crear | `betas`, `cd_transfer`, `cd_R`, `cd_N`, `savory_taps`, `cd_summary`. El perfil ISI "CD corta" usa `savory_taps` |
+| `emulador/cd/fisica.py` | `emulador/cd/physics.py` | crear | `betas`, `cd_transfer`, `cd_R`, `cd_N`, `cd_summary` (`savory_taps` se eliminó, decisión 24) |
 | `emulador/cd/referencia.py` | `emulador/cd/reference.py` | crear | `cd_reference(x, fs, D, lam, z, S, full=False)` |
 | `emulador/cd/overlap_save.py` | `emulador/cd/overlap_save.py` | crear | `cd_hbar` (host), `cd_overlap_save` (FPGA) |
 | `emulador/cd/bloque.py` | `emulador/blocks/chromatic_dispersion.py` | completar esqueleto | Sigue en `REGISTRY["chromatic_dispersion"]`; corregir el signo del docstring y `fs` por defecto a 64e9 |
@@ -95,7 +96,7 @@ La Ref. §4 propone una estructura genérica. Acá se adapta al repositorio, que
 @dataclass
 class ISI(Block):
     taps: np.ndarray = field(default_factory=lambda: np.array([1.0 + 0j]))  # se usa si profile="taps"
-    profile: str = "taps"      # taps | echo | gaussian | bessel | butter | measured | cd_short
+    profile: str = "taps"      # taps | echo | gaussian | bessel | butter | measured
     Rs: float = 32e9
     sps: int = 2
     B_rel: float = 0.6         # B / Rs
@@ -445,7 +446,10 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 - **Verificar:** `pytest tests/test_isi.py -k "bessel or butter or K_rule" -v`; `python -m scripts.run_block isi --param profile=bessel`.
 - **Listo cuando:** los tests pasan y está la figura de diseño en frecuencia contra bilineal.
 
-#### A4 · Perfil CD corta — S
+#### A4 · Perfil CD corta — S · eliminado (decisión 24)
+
+> **Eliminado.** El perfil `cd_short` y `savory_taps` se sacaron del código, de los tests y de los notebooks (decisión 24). Esta sección queda como registro de lo que se hizo y por qué se descartó.
+
 
 - **Objetivo:** cargar en el FIR los taps de Savory para pocos km, que vinculan ISI y CD.
 - **Depende de:** A1 y B1 (`savory_taps` y `cd_R` viven en `emulador/cd/physics.py`).
@@ -466,7 +470,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
   | Límite | z = 100 km a 64 GSa/s (R = 55) | `ValueError` |
   | Contra la referencia | NRMSE contra `cd_reference`, QAM16, 4096 símbolos | < 0,40 (10 km), < 0,25 (20–30 km), < 0,20 (40–55 km) (decisión 20) |
 
-- **Notebook:** no va en `02_isi_generica.ipynb` (se quitó: alcanza con los perfiles causales). La comparación con la CD en frecuencia queda en los tests (decisión 20) y la curva del FIR truncado en el notebook 04.
+- **Notebook:** ninguno (eliminado, decisión 24).
 - **Errores a evitar:** usar el signo de Savory tal cual sin verificarlo contra `cd_transfer` (Savory escribe el compensador).
 - **Verificar:** `pytest tests/test_isi.py -k cd_short -v`.
 - **Listo cuando:** los tests pasan y el criterio contra la referencia quedó agregado a §1.
@@ -502,7 +506,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 
 #### B1 · Física de la CD — M
 
-- **Objetivo:** β₂, β₃, H<sub>CD</sub> con signo positivo, R, N y taps de Savory, en SI y como funciones puras.
+- **Objetivo:** β₂, β₃, H<sub>CD</sub> con signo positivo, R y N, en SI y como funciones puras (los taps de Savory se eliminaron, decisión 24).
 - **Depende de:** P1, P2.
 - **Para qué:** es el corazón matemático del bloque. El test de signo y el de pendiente del retardo de grupo **fijan** las decisiones 2 y 3: si alguien cambia el signo o reintroduce el ½, fallan (Ref. B.1–B.2, §3).
 - **Archivos:** + `emulador/cd/{__init__,physics}.py`, + `tests/test_chromatic_dispersion.py`.
@@ -514,7 +518,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
   2. `cd_transfer(L, fs, D, lam, z, S=0.0)` = exp(−j(β₂ω²/2 + β₃ω³/6)z), con ω = 2π·`fftfreq(L, 1/fs)` (PDF Ec. 18). Con β₃ = 0 da exp(+jπDλ²z f²/c).
   3. `cd_R(fs, D, lam, z)` = 2·⌊\|D\|λ²z/(2cT<sub>s</sub>²)⌋ + 1 (PDF Ec. 26).
   4. `cd_N(fs, D, lam, z, N_min=128, N_max=HardwareParams().N_max)` = max(N_min, 2^⌈log₂R⌉), con `ValueError` si supera N<sub>max</sub> (decisión 5).
-  5. `savory_taps(fs, D, lam, z)` (ver A4), sin límite de largo.
+  5. ~~`savory_taps(fs, D, lam, z)`~~ (eliminado, decisión 24).
   6. `cd_summary(esc, D, z, S)`: dict con β₂ [ps²/km], β₃ [ps³/km], pendiente del retardo de grupo [ps/GHz], R, N y L<sub>D</sub> para T₀ = 1/R<sub>s</sub> (PDF Tabla 15).
 - **Tests:**
 
@@ -564,7 +568,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 - **Notebook:** `03_cd_modelo_fisico.ipynb`:
   - ensanchamiento del gaussiano (Fig. 5 del PDF);
   - constelaciones QAM16 con CD de 1 y 5 km, y 500 km + H* (Fig. 6);
-  - (el chirp h<sub>T</sub>[n] de la Fig. 7 se quitó: los taps de Savory no se usan en el bloque de CD; quedan en los tests y en la curva del FIR truncado del notebook 04).
+  - (el chirp h<sub>T</sub>[n] de la Fig. 7 se quitó junto con los taps de Savory, decisión 24).
 - **Errores a evitar:** hacer `ifft(fft(x)·H)` sin relleno (las colas dan la vuelta); muestrear el gaussiano a 64 GSa/s con T₀ ≈ T<sub>s</sub> (aliasing: usar f<sub>s</sub> alta o T₀ ≥ 3·T<sub>s</sub>); medir la energía sobre la salida recortada.
 - **Verificar:** `pytest tests/test_chromatic_dispersion.py -k "reference or gauss" -v`.
 - **Listo cuando:** los tests pasan y las Figs. 5–7 están reproducidas.
@@ -622,7 +626,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
   - la Fig. 10 justifica la decisión 4 (incluir β₃): muestra la ISI residual que queda cuando el compensador solo invierte β₂ (PDF §6.2).
 - **Archivos:** ~ `notebooks/03_cd_modelo_fisico.ipynb`, + `notebooks/04_cd_overlap_save.ipynb`, ~ `tests/test_chromatic_dispersion.py`, opcional + `scripts/sweep_cd.py`.
 - **Qué hacer:**
-  1. **Barrido de alcance:** NRMSE de OLS contra la referencia con QAM16 a 32 GBd y 2 sps, z = 0 … 2000 km, N ∈ {128, …, 2048}, y la curva del FIR de Savory. Esperado: N=128 hasta ≈ 200 km, 256 hasta 300–400, 512 hasta 800–900, 1024 hasta ≈ 1500.
+  1. **Barrido de alcance:** NRMSE de OLS contra la referencia con QAM16 a 32 GBd y 2 sps, z = 0 … 2000 km, N ∈ {128, …, 2048} (la curva del FIR de Savory se quitó, decisión 24). Esperado: N=128 hasta ≈ 200 km, 256 hasta 300–400, 512 hasta 800–900, 1024 hasta ≈ 1500.
   2. **Residuo de β₃:**
      - canal `cd_reference(D, S=0,057)` seguido de compensación `cd_reference(−D, S=0)`;
      - `recover` y `evm_opt`;
@@ -779,7 +783,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] B1.1 · `cd/physics.py`: `betas`, `cd_transfer` + tests de signo, pasa-todo y composición
 - [x] B1.2 · Tests de pendiente del retardo de grupo y parábola con β₃
 - [x] B1.3 · `cd_R`, `cd_N` + tests de tabla
-- [x] B1.4 · `savory_taps`, `cd_summary` + tests
+- [x] B1.4 · `savory_taps`, `cd_summary` + tests (`savory_taps` eliminado después, decisión 24)
 
 *Hito 2 · Perfiles de ISI y referencia ideal de la CD*
 - [x] A2.1 · `isi/profiles.py`: `normalize_energy`, `echo`, `K_rule` + tests
@@ -793,7 +797,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] A3.1 · `isi/profiles.py`: `analog` (Bessel/Butterworth) + tests de −3 dB y energía
 - [x] A3.2 · Tests de fidelidad contra el prototipo analógico
 - [x] A3.3 · Perfiles bessel/butter en el bloque + regresión del perfil principal (`tests/data/`)
-- [x] A4.1 · Perfil `cd_short` (requiere B1.4) + tests
+- [x] A4.1 · Perfil `cd_short` (requiere B1.4) + tests (eliminado después, decisión 24)
 - [x] B3.1 · `cd/overlap_save.py` (`cd_hbar`, `cd_overlap_save`) + test contra la referencia
 - [x] B3.2 · Bloque `ChromaticDispersion` (docstring corregido, `fs=64e9`) + tests + `run_block`
 
@@ -850,7 +854,7 @@ Todo lo que sigue toca código o configuración compartidos: requiere acuerdo o 
 | Formatos Qm.n | Sin definir | Arrancar de Q2.8 / 10 bits (Jiang) | abierta |
 | Tolerancia de la Tabla 4 (SNR eq. de la ISI) | El PDF no da tolerancia | ±0,5 dB | abierta |
 | EVM back-to-back | Con roll-off 0,1 y span 32 el piso es 0,58 % (medido en P3.3) | span 64: piso 0,12 % (decisión 15) | cerrada |
-| Criterio de "CD corta" contra la referencia | El PDF no lo define | Definir al hacer A4 | abierta |
+| Criterio de "CD corta" contra la referencia | El PDF no lo define | Definir al hacer A4 | cerrada: decisión 20; el perfil se eliminó (decisión 24) |
 | Retardo fraccionario de Bessel/Butterworth | Afecta la EVM medida si el receptor no busca el instante óptimo | `rx.py` con búsqueda del instante (sps = 16 para análisis fino) | mitigado en P4 |
 | Versionado de notebooks | Diffs ilegibles y conflictos entre ASUS y LENOVO | `nbstripout` instalado en cada máquina + pares `jupytext` (percent) | abierta |
 | Duplicación de estímulos | `gen_signal` y `stimuli/` divergen | Unificar por PR cuando el equipo defina la interfaz de señal | abierta |
