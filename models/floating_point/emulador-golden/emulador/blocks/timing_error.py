@@ -27,12 +27,26 @@ from dataclasses import dataclass
 import numpy as np
 
 from ..common import Block
+from ..timing import cubic_delay, ideal_delay, linear_delay
+
+METHODS = {"ideal": ideal_delay, "linear": linear_delay, "cubic": cubic_delay}
 
 
 @dataclass
 class TimingError(Block):
     mu: float = 0.0
+    method: str = "ideal"
     name = "timing_error"
 
     def process(self, x: np.ndarray) -> np.ndarray:
-        raise NotImplementedError("Timing error: pendiente de implementar")
+        """Aplica el retardo fraccionario mu con el método elegido.
+
+        Args:
+            x: Señal de entrada, el tiempo es el último eje.
+
+        Returns:
+            Señal retardada, misma forma que x.
+        """
+        if self.method not in METHODS:
+            raise ValueError(f"timing_error: método {self.method!r} desconocido (usar {sorted(METHODS)})")
+        return METHODS[self.method](x, self.mu)
