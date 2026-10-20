@@ -8,23 +8,29 @@ polarización y un retardo entre las dos polarizaciones (DGD).
 Este bloque necesita señal de DOS polarizaciones: forma (2, n), filas X e Y.
 
 Modelo (una sección, en frecuencia, w = 2*pi*f):
-    J_k(w) = R(theta_k) @ diag( exp(+j*w*tau_k/2), exp(-j*w*tau_k/2) ) @ R(theta_k)^H
+    J_k(w) = R_k @ diag( exp(+j*w*tau_k/2), exp(-j*w*tau_k/2) ) @ R_k^H
     J_total(w) = J_K(w) @ ... @ J_1(w)
     [Yx(w), Yy(w)]^T = J_total(w) @ [Xx(w), Xy(w)]^T
-  con tau_k el DGD de la sección y R(theta) una rotación 2x2.
+  con tau_k el DGD de la sección y R_k = R(theta_k, phi_k) una matriz 2x2 unitaria.
+  Los ejes se sortean uniformes en la esfera de Poincaré; con solo theta el DGD
+  total sale Rayleigh y no Maxwelliano (ver ``emulador/pmd/physics.py``).
 
 Parámetros:
   fs         : frecuencia de muestreo, en Hz.
   n_sections : cantidad de secciones K (más secciones = estadística más fiel).
+               Con K <= 10 el DGD total se aparta un poco de la Maxwelliana (nunca
+               supera K*dgd_ps, la cola queda recortada); con K >= 15 coincide.
   dgd_ps     : DGD por sección, en ps. Por defecto 0 (sin efecto).
+               DGD total medio = dgd_ps * sqrt(8*K/(3*pi))  (~2.9 * dgd_ps con K = 10).
   seed       : semilla para los ángulos aleatorios de cada sección.
 
-Estado: una sección (paso 2). La física está en ``emulador/pmd/physics.py``.
+Estado: golden model de referencia completo (cascada de K secciones, DGD total
+Maxwelliano verificado con K = 20 en tests/test_pmd.py). Histograma:
+``python -m scripts.pmd_maxwell``.
 
 TODO:
-  - Cascada de ``n_sections`` secciones con ángulos aleatorios (paso 3).
-  - Verificar que con ángulos aleatorios el DGD total sigue una distribución
-    Maxwelliana (simular muchas realizaciones y comparar el histograma).
+  - Modelo de la arquitectura (rotaciones + FIR de Lagrange) y comparación contra
+    esta referencia (paso 4).
 """
 from __future__ import annotations
 
@@ -33,7 +39,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from ..common import Block
-from ..pmd import pmd_section
+from ..pmd import pmd_section, random_angles, total_dgd
 
 
 @dataclass
@@ -58,11 +64,22 @@ class PMD(Block):
         
 
         tau = self.dgd_ps * 1e-12  # DGD por sección en segundos
-        # Un solo generador para los K ángulos: semillas distintas dan fibras independientes
-        thetas = np.random.default_rng(self.seed).uniform(0, 2 * np.pi, self.n_sections)
+        thetas, phis = self.angles()
 
-        for i, theta in enumerate(thetas):
-            x = pmd_section(x, self.fs, tau, theta)
-            print(f"Sección {i+1}/{self.n_sections}: tau={tau*1e12:.2f} ps, theta={theta:.2f} rad")
+        for theta, phi in zip(thetas, phis):
+            x = pmd_section(x, self.fs, tau, theta, phi)
 
         return x
+
+    def angles(self) -> tuple[np.ndarray, np.ndarray]:
+        """Ángulos (thetas, phis) de las K secciones de esta fibra.
+
+        Un solo generador para los K ángulos: semillas distintas dan fibras
+        independientes. Ejes uniformes en la esfera de Poincaré (``random_angles``).
+        """
+        return random_angles(np.random.default_rng(self.seed), self.n_sections)
+
+    def total_dgd_ps(self) -> float:
+        """DGD total de esta fibra (esta semilla), en ps, medido en la portadora."""
+        thetas, phis = self.angles()
+        return total_dgd(self.dgd_ps * 1e-12, thetas, phis) * 1e12
