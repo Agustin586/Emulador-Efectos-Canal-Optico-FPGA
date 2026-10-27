@@ -25,7 +25,7 @@ Esta tabla es el **único registro de decisiones**:
 | 4 | Término β₃ | Incluido, con S = 0 por defecto (con S = 0, β₃ = 0 exacto) | aceptada |
 | 5 | Método de la CD | Muestreo en frecuencia + overlap-save; FFT de L = 2N; retardo N/2; N ≥ R; N automático = max(128, menor potencia de 2 ≥ R), hasta N<sub>max</sub> | aceptada |
 | 6 | ISI | FIR complejo causal, K ≤ 32, energía normalizada. Coeficientes diseñados en frecuencia: Bessel y Butterworth desde el prototipo analógico, **nunca con la transformación bilineal**. Perfil principal: Bessel m = 4, B = 0,6 R<sub>s</sub>, K = 16. Regla: K = 32 si B ≤ 0,4 R<sub>s</sub> y m ≥ 4. Por defecto, el bloque queda en bypass | aceptada |
-| 7 | Hardware | RFSoC Zynq UltraScale+ (modelo sin confirmar); FFT radix-2² con paralelismo P parametrizable. P, f<sub>clk</sub> y N<sub>max</sub> son **provisorios** (`HardwareParams`). Reemplaza la suposición de Artix-7 del PDF | aceptada (parcial) |
+| 7 | Hardware | RFSoC Zynq UltraScale+; el equipo informó (2026-10-27) que el modelo **no está confirmado**, así que todo lo que depende del dispositivo queda **parametrizado**: P, f<sub>clk</sub> y N<sub>max</sub> en `HardwareParams` (valores provisorios, `provisional=True`), y la arquitectura de la FFT de la CD, que se define aparte ([CONTEXTO_FFT_CD.md](CONTEXTO_FFT_CD.md)). Reemplaza la suposición de Artix-7 del PDF | aceptada (parametrizada) |
 | 8 | Retardo | En ISI y CD, `process()` devuelve la salida **alineada** (descuenta el retardo entero; el fraccionario no se corrige). El bloque expone `delay_samples`, `coefficients()` y `process_hw()` (salida cruda, como el hardware, que es la que se exporta) | aceptada |
 | 9 | Extensión de `Block` | Agregar esas tres piezas a `common.Block` con valores neutros. Hasta que haya acuerdo, se definen solo en ISI y CD | confirmada; falta acuerdo del equipo |
 | 10 | Estímulos | Módulo nuevo `emulador/stimuli/`, sin tocar `common.py` | confirmada; falta acuerdo del equipo |
@@ -43,6 +43,7 @@ Esta tabla es el **único registro de decisiones**:
 | 22 | SNR equivalente de la ISI (A5) | Instante óptimo: perfil diseñado con 16 sps (K y d ×8, mismo tiempo que a 2 sps) y la mejor de las 16 fases (`isi.isi_snr_eq`). Reproduce los 9 valores de la Tabla 4 del PDF con diferencia ≤ 0,1 dB; criterio **±0,2 dB** (el PDF redondea a 0,1). Grilla fija (2 sps, muestreo en el cursor entero): gaussiano igual al óptimo; Bessel m = 4 pierde 5 a 10 dB (10,1 / 10,2 / 18,3 dB con B = 0,4 / 0,5 / 0,6·R<sub>s</sub>); Butterworth m = 4 hasta 19 dB (7,7 / 15,3 / 6,6 dB) | aceptada (propuesta, revisar) |
 | 23 | Residuo de β₃ (B4, Tabla 17) | Canal `cd_reference(D, S = 0,057, full=True)` → compensación `cd_reference(−D, S = 0, full=True)` → `rx.recover` (`cd.beta3_residual`). β₃ agrega un retardo global con parte fraccionaria (τ(ω) = β₃zω²/2 tiene media no nula). **`timing="grid"`** (fases enteras a 2 sps, como el PDF): a 1000 km, EVM 0,69 / 5,49 / 21,2 % a 32 / 64 / 100 GBd (PDF: 0,7 / 5,6 / 22 %), criterio ±5 %. **`timing="ideal"`** (además, el mejor retardo fraccionario continuo, como una recuperación de temporización perfecta): 0,29 / 2,2 / 8,3 %, criterio ±10 %; es la ISI residual de β₃ sola y crece monótonamente con la tasa. **La Tabla 17 mezcla un error de temporización del receptor** (0,69 → 0,29 %; 5,5 → 2,2 %; 21 → 8,3 %). A 200 GBd: EVM 69 % con las dos (SNR equivalente 3,2 dB), no > 100 %: `evm_opt` usa la ganancia óptima y no pasa de 100 %. Criterio: EVM > 50 %. Control sin β₃: 0,12 %, criterio < 0,2 % | aceptada (propuesta, revisar) |
 | 24 | Taps de Savory y perfil `cd_short` | **Eliminados** del código, de los tests y de los notebooks (2026-10-12): el perfil era solo ilustrativo (decisión 20) y no se usa. La CD se emula únicamente con el bloque `ChromaticDispersion` (overlap-save). El bloque `ISI` pierde los campos `D_ps_nm_km`, `wavelength_nm` y `length_km`, que solo usaba ese perfil. La justificación del overlap-save frente a un FIR en el tiempo queda en el largo del chirp R (55 taps a 100 km, 1117 a 2000 km, contra K ≤ 32) | aceptada |
+| 29 | Tasa del emulador y referencia de arquitectura | Respuesta del equipo (2026-10-27): la referencia principal es **Fiber-on-Chip** (Börjeson y Larsson-Edefors, 2023). **La tasa no está definida: todo queda parametrizado** (f<sub>s</sub>, P, f<sub>clk</sub>, N<sub>max</sub>); no se diseña para un escenario fijo. Las pruebas usan valores de interés (los escenarios ya usados: 64 GSa/s a 2 sps, 72 GSa/s a 1,2 sps, 120 GSa/s, de 100 a 2000 km). La arquitectura de la FFT tiene que admitir cualquier P y el modelo en punto fijo tiene que dar el mismo resultado bit a bit para cualquier P | confirmada |
 
 ---
 
@@ -808,7 +809,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] B4.2 · Notebook `04_cd_overlap_save` (Figs. 9 y 10, hardware)
 
 **Cuantización y exportación**
-- [ ] C1.1 · Confirmar RFSoC, P, f<sub>clk</sub> y N<sub>max</sub>; actualizar `HardwareParams` y la fila 7 de §1
+- [x] C1.1 · Confirmar RFSoC, P, f<sub>clk</sub> y N<sub>max</sub>; actualizar `HardwareParams` y la fila 7 de §1 (dispositivo sin confirmar: queda parametrizado, decisión 7)
 - [ ] C2.1 · Definir la convención Qm.n (fila nueva en §1)
 - [ ] C2.2 · `quantization.py` + tests
 - [ ] C3.1 · Exploración de bits de la ISI (notebook `05_cuantizacion`)
@@ -848,7 +849,7 @@ Todo lo que sigue toca código o configuración compartidos: requiere acuerdo o 
 
 | Tema | Riesgo o pregunta | Propuesta | Estado |
 |---|---|---|---|
-| Modelo de RFSoC, P, f<sub>clk</sub>, N<sub>max</sub> | Bloquea C3 (réplica radix-2²) y la exportación bit a bit | Dejar N<sub>max</sub> = 2048 provisorio | abierta |
+| Modelo de RFSoC, P, f<sub>clk</sub>, N<sub>max</sub> | Bloquea C3 (réplica radix-2²) y la exportación bit a bit | Parametrizado (decisión 7); falta elegir la arquitectura de la FFT ([CONTEXTO_FFT_CD.md](CONTEXTO_FFT_CD.md)) | mitigado |
 | N<sub>max</sub> en escenarios rápidos | A 200 GSa/s y 1000 km, R ≈ 5450 > 2048 | `cd_N` falla explícitamente; N<sub>max</sub> viene de `HardwareParams` | abierta |
 | Ubicación del modelo bit a bit | La Ref. lo pone en el golden; el repo tiene `models/fixed_point/emulador-real/` | Utilidades y exploración en el golden, modelo bit a bit en `fixed_point` | **requiere decisión** (afecta al equipo) |
 | Formatos Qm.n | Sin definir | Arrancar de Q2.8 / 10 bits (Jiang) | abierta |
