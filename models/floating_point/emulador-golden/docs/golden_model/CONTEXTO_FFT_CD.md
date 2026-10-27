@@ -8,13 +8,22 @@
 
 Soy Wanda Molina y trabajo en el golden model del bloque de dispersión cromática (CD) de un emulador de canal óptico en FPGA (proyecto PROCOM, Fundación Fulgor). El algoritmo del bloque ya está cerrado y validado en punto flotante; ahora tengo que elegir **cómo se implementa la FFT en hardware**, porque el modelo en punto fijo bit a bit tiene que replicar exactamente su estructura (etapas, redondeos y escalado).
 
-La referencia principal es **Fiber-on-Chip** (Börjeson y Larsson-Edefors, 2023): empezá por cómo implementan ahí la CD y la FFT, y compará el resto contra eso.
+La referencia principal es **Fiber-on-Chip** (Börjeson y Larsson-Edefors, 2023): empezá por cómo implementan ahí la CD (si usan FFT, con qué arquitectura; si usan otro método, cuál) y compará el resto contra eso. Si su método difiere del mío, explicá la diferencia, pero mi algoritmo (§2) no cambia.
 
 Quiero que me ayudes en tres pasos, y que me muestres el resultado de cada uno antes de seguir:
 
 1. **Explicación.** Cómo funciona una FFT segmentada en hardware: radix-2, radix-4 y radix-2², DIT frente a DIF, arquitecturas SDF y MDC (y paralelas de P muestras por ciclo), orden de salida (natural o bit invertido), dónde están los multiplicadores y los twiddles, latencia y memoria. Con diagramas en texto para L = 16 y ejemplos numéricos chicos. Supone que conozco DSP en general pero no arquitecturas de FFT en FPGA.
 2. **Opciones para este bloque.** Compará al menos: (0) la arquitectura de Fiber-on-Chip; (a) IP FFT de AMD/Xilinx (LogiCORE, PG109) en modo Pipelined Streaming I/O; (b) radix-2² SDF propia con P = 1; (c) radix-2² MDC o paralela con P > 1; (d) cualquier otra que te parezca razonable para overlap-save (por ejemplo, aprovechar el orden bit invertido para multiplicar por H̄ sin reordenar). Para cada una: recursos (multiplicadores, DSP, memoria), tasa, latencia, si permite cambiar N en tiempo de ejecución, y **qué hace falta para replicarla bit a bit** en el modelo de punto fijo.
 3. **Recomendación y especificación.** Una arquitectura recomendada, parametrizada en N y P, con lo que el modelo de punto fijo necesita saber: descomposición y orden de las etapas, ancho de palabra de datos y twiddles por etapa, dónde se redondea y con qué modo, esquema de escalado (fijo por etapa, configurable, bloque flotante), orden de entrada y salida, latencia en ciclos. Y la lista de preguntas que tengo que llevarle al equipo.
+
+### Material adjunto
+
+Te adjunto (si falta alguno, decímelo y no lo reconstruyas de memoria):
+
+- Börjeson y Larsson-Edefors, *Fiber-on-Chip* (2023): https://research.chalmers.se/publication/531909/file/531909_Fulltext.pdf
+- Jiang, Xie y Chen (2026), *Hardware implementation of configurable chromatic dispersion model…*
+- AMD PG109 (*Fast Fourier Transform LogiCORE IP Product Guide*) y DS889 (*Zynq UltraScale+ RFSoC Data Sheet: Overview*)
+- El PDF del proyecto (*Fundamentos_CD_ISI_golden_model.pdf*), §4.7 y §4.8
 
 ### Reglas
 
@@ -96,7 +105,7 @@ Propuesta previa del proyecto (PDF §4.8, sin cerrar): algoritmo radix-2² (He y
 4. ¿Hace falta reordenar la salida bit invertida, o se puede multiplicar por H̄ en ese orden (cargando H̄ ya permutado) y alimentar la IFFT en ese orden?
 5. ¿Qué esquema de escalado conviene, sabiendo que |H̄| = 1 y que la potencia de la señal se conserva?
 6. Con overlap-save la FFT ve cada muestra dos veces (ventanas solapadas al 50 %): ¿cómo se organiza el buffer de entrada y cuánta memoria hace falta en función de N y P?
-7. ¿Qué hace Fiber-on-Chip para emular a tasa reducida (tasa escalada, reloj, paralelismo) y qué conviene copiar?
+7. ¿Cómo maneja Fiber-on-Chip la relación entre la tasa emulada y la del hardware (tasa escalada, reloj, paralelismo) y qué conviene copiar para un diseño parametrizado en P?
 8. Recursos y tasa en función de P para al menos dos RFSoC de la familia (el más chico y el más grande), aclarando qué es estimación.
 9. ¿Qué parámetros nuevos tendría que agregar a `HardwareParams`?
 
