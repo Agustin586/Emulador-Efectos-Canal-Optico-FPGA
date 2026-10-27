@@ -20,7 +20,7 @@ Esta tabla es el **único registro de decisiones**:
 | # | Tema | Decisión | Estado |
 |---|---|---|---|
 | 1 | Escenario de referencia | 32 GBd, 2 sps, f<sub>s</sub> = 64 GSa/s, **configurable** mediante `Scenario` (`emulador/config.py`) | aceptada |
-| 2 | Signo de la CD | **Positivo**: H<sub>CD</sub>(f) = exp(+jπDλ²z f²/c), equivalente a exp(−jβ(ω)z) con β₂ = −Dλ²/(2πc). Hay que comunicarlo a la tesis de CDC, que debe usar H* | aceptada |
+| 2 | Signo de la CD | **Positivo**: H<sub>CD</sub>(f) = exp(+jπDλ²z f²/c), equivalente a exp(−jβ(ω)z) con β₂ = −Dλ²/(2πc). El grupo del CDC confirmó (2026-10-24) que compensa con H*, la convención conjugada | aceptada |
 | 3 | Factor ½ de la guía original del proyecto | **Descartado**: emularía la mitad de la dispersión | aceptada |
 | 4 | Término β₃ | Incluido, con S = 0 por defecto (con S = 0, β₃ = 0 exacto) | aceptada |
 | 5 | Método de la CD | Muestreo en frecuencia + overlap-save; FFT de L = 2N; retardo N/2; N ≥ R; N automático = max(128, menor potencia de 2 ≥ R), hasta N<sub>max</sub> | aceptada |
@@ -818,7 +818,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [ ] C4.3 · Notebook `06_vectores_rtl`
 
 **Coordinación con el equipo**
-- [ ] Comunicar la convención de signo positiva a la tesis de CDC
+- [x] Comunicar la convención de signo positiva a la tesis de CDC (confirmado 2026-10-24: el CDC compensa con H*)
 - [ ] PR al equipo: extensión de `Block` (decisión 9)
 - [ ] PR al equipo: extra `notebooks` (decisión 11), `package-data` de `style.mplstyle` y módulo `stimuli/` (decisión 10)
 - [ ] PR al equipo: estado de los bloques 01 y 03 en el README
@@ -838,7 +838,7 @@ Todo lo que sigue toca código o configuración compartidos: requiere acuerdo o 
 | Dependencias | `pyproject.toml`: extra `notebooks` (`jupyterlab`, `ipykernel`, `jupytext`, `nbstripout`, `nbconvert`) | Decisión 11 de §1; PR |
 | Documentación | `README.md` del paquete: tabla de estado, "Convenciones abiertas" (signo de la CD ya decidido) | PR al cerrar A5 y B4 |
 | Definición de SNR | Bloque AWGN (otra persona) | La normalización Σ\|h\|² = 1 de la ISI supone potencia conservada; coordinar |
-| Tesis de CDC | Signo de H<sub>CD</sub> | Comunicar: su filtro usa la conjugada |
+| Tesis de CDC | Signo de H<sub>CD</sub> | Confirmado (2026-10-24): su filtro usa la conjugada |
 | Punto fijo | `models/fixed_point/emulador-real/` | Decidir con el equipo si el modelo bit a bit vive ahí (§6) |
 | Verificación | `verification/` consume `outputs/vectores/` | Acordar el formato de `meta.json` y `.hex` |
 
