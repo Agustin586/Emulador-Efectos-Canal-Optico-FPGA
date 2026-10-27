@@ -32,7 +32,7 @@ Esta tabla es el **único registro de decisiones**:
 | 11 | Notebooks | `notebooks/` + extra `notebooks` en `pyproject.toml` (`jupyterlab`, `ipykernel`, `jupytext`, `nbstripout`, `nbconvert`). Cada máquina corre `nbstripout --install` una vez (config local de git) | aplicada en `wanda_dev`; falta PR al equipo |
 | 12 | Entorno | venv por máquina en `.venv/` (ignorado); Docker más adelante | aceptada |
 | 13 | Estructura | Prevalecen las convenciones del repo sobre la referencia (§2) | aceptada |
-| 14 | Punto fijo | Modelo bit a bit en `models/fixed_point/emulador-real/`; en el golden solo utilidades y exploración | **sin confirmar** |
+| 14 | Punto fijo | Modelo bit a bit en `models/fixed_point/emulador-real/` (con HALCON, decisión 28); en el golden solo utilidades y exploración (`emulador/quantization.py`), que además sirven de referencia bit a bit | confirmada; falta acuerdo del equipo |
 | 15 | RRC de los estímulos y del receptor | span = 64 símbolos por defecto (`shape`, `comm_signal`, `matched_filter`). Piso de EVM back-to-back medido en P3.3 con roll-off 0,1 y 2 sps: span 32 → 0,58 %, 48 → 0,27 %, **64 → 0,12 %**, 96 → 0,04 %. Criterio back-to-back: EVM < 0,5 % | aceptada |
 | 16 | Convención de la PRBS | LFSR de Fibonacci según ITU-T O.150 (x<sup>m</sup> + x<sup>k</sup> + 1): b[n] = b[n−m] ⊕ b[n−k]. Los primeros m bits de salida son la semilla, del MSB al LSB. Sin inversión por defecto; `invert=True` da la salida invertida que O.150 pide para PRBS-15/23/31. El generador del RTL tiene que usar la misma convención | aceptada |
 | 17 | Orden de trabajo de ISI y CD | **Intercalado por paso**, para presentar avances de los dos efectos: A1 → B1 → A2 → B2 → A3 → A4 → B3 → A5 → B4, agrupados en 4 hitos (checklist de §4). Se respetan las dependencias de cada paso | aceptada |
@@ -43,6 +43,10 @@ Esta tabla es el **único registro de decisiones**:
 | 22 | SNR equivalente de la ISI (A5) | Instante óptimo: perfil diseñado con 16 sps (K y d ×8, mismo tiempo que a 2 sps) y la mejor de las 16 fases (`isi.isi_snr_eq`). Reproduce los 9 valores de la Tabla 4 del PDF con diferencia ≤ 0,1 dB; criterio **±0,2 dB** (el PDF redondea a 0,1). Grilla fija (2 sps, muestreo en el cursor entero): gaussiano igual al óptimo; Bessel m = 4 pierde 5 a 10 dB (10,1 / 10,2 / 18,3 dB con B = 0,4 / 0,5 / 0,6·R<sub>s</sub>); Butterworth m = 4 hasta 19 dB (7,7 / 15,3 / 6,6 dB) | aceptada (propuesta, revisar) |
 | 23 | Residuo de β₃ (B4, Tabla 17) | Canal `cd_reference(D, S = 0,057, full=True)` → compensación `cd_reference(−D, S = 0, full=True)` → `rx.recover` (`cd.beta3_residual`). β₃ agrega un retardo global con parte fraccionaria (τ(ω) = β₃zω²/2 tiene media no nula). **`timing="grid"`** (fases enteras a 2 sps, como el PDF): a 1000 km, EVM 0,69 / 5,49 / 21,2 % a 32 / 64 / 100 GBd (PDF: 0,7 / 5,6 / 22 %), criterio ±5 %. **`timing="ideal"`** (además, el mejor retardo fraccionario continuo, como una recuperación de temporización perfecta): 0,29 / 2,2 / 8,3 %, criterio ±10 %; es la ISI residual de β₃ sola y crece monótonamente con la tasa. **La Tabla 17 mezcla un error de temporización del receptor** (0,69 → 0,29 %; 5,5 → 2,2 %; 21 → 8,3 %). A 200 GBd: EVM 69 % con las dos (SNR equivalente 3,2 dB), no > 100 %: `evm_opt` usa la ganancia óptima y no pasa de 100 %. Criterio: EVM > 50 %. Control sin β₃: 0,12 %, criterio < 0,2 % | aceptada (propuesta, revisar) |
 | 24 | Taps de Savory y perfil `cd_short` | **Eliminados** del código, de los tests y de los notebooks (2026-10-12): el perfil era solo ilustrativo (decisión 20) y no se usa. La CD se emula únicamente con el bloque `ChromaticDispersion` (overlap-save). El bloque `ISI` pierde los campos `D_ps_nm_km`, `wavelength_nm` y `length_km`, que solo usaba ese perfil. La justificación del overlap-save frente a un FIR en el tiempo queda en el largo del chirp R (55 taps a 100 km, 1117 a 2000 km, contra K ≤ 32) | aceptada |
+| 25 | Convención de formato de punto fijo | La de `ac_fixed<W, I, S>` de Algorithmic C, que usa HALCON: **W bits totales, I bits enteros incluido el signo**, W − I fraccionarios (paso q = 2^−(W−I)). Rango con signo: [−2^(I−1), 2^(I−1) − q]. El Q2.8 de Jiang es `ac_fixed<10, 2, true>`. La misma notación en Python (`quantization.py`) y en C++ | aceptada |
+| 26 | Redondeo y desborde | Por defecto **`AC_RND` (redondeo half-up: floor(x/q + 0,5)·q) y `AC_SAT` (saturación)**, en Python y en HALCON. Se puede cambiar por señal en la exploración de bits si se justifica por recursos | aceptada |
+| 27 | Criterio de aceptación de un formato | **NRMSE de la salida en punto fijo contra la salida en flotante** (no contra la referencia ideal, para no mezclar error de método y de cuantización): ≤ 1/10 del error del método en la CD (decisión 21) y ≤ 1e-3 en la ISI | aceptada |
+| 28 | Herramienta del modelo en punto fijo | **HALCON** (simulador de DSP en C++ de Fundación Fulgor, sugerido al equipo). Los simuladores van en `models/fixed_point/emulador-real/`; HALCON es una **dependencia externa clonada aparte** (no submódulo), con la versión usada anotada. Python corre en el host (el contenedor de HALCON trae Python 3.8 y el paquete pide ≥ 3.10) e intercambia archivos con el simulador | confirmada; falta acuerdo del equipo |
 | 29 | Tasa del emulador y referencia de arquitectura | Respuesta del equipo (2026-10-27): la referencia principal es **Fiber-on-Chip** (Börjeson y Larsson-Edefors, 2023). **La tasa no está definida: todo queda parametrizado** (f<sub>s</sub>, P, f<sub>clk</sub>, N<sub>max</sub>); no se diseña para un escenario fijo. Las pruebas usan valores de interés (los escenarios ya usados: 64 GSa/s a 2 sps, 72 GSa/s a 1,2 sps, 120 GSa/s, de 100 a 2000 km). La arquitectura de la FFT tiene que admitir cualquier P y el modelo en punto fijo tiene que dar el mismo resultado bit a bit para cualquier P | confirmada |
 
 ---
@@ -671,11 +675,11 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 #### C2 · Utilidades de cuantización — S
 
 - **Objetivo:** `quantize(x, m, n, rounding="half_up", saturate=True)` para complejos.
-- **Depende de:** P2. Antes hay que decidir la convención Qm.n: si m incluye o no el bit de signo; Jiang usa Q2.8 = 10 bits, con signo incluido.
+- **Depende de:** P2. Convención de formato: decisión 25 (`ac_fixed<W, I>`, I incluye el signo; Q2.8 de Jiang = `ac_fixed<10, 2, true>`). Redondeo y desborde: decisión 26.
 - **Para qué:** es la herramienta de la exploración de bits (Ref. C.3). Es independiente de dónde termine viviendo el modelo bit a bit.
 - **Archivos:** + `emulador/quantization.py`, + `tests/test_quantization.py`.
 - **Qué hacer:**
-  1. Paso q = 2⁻ⁿ; rango [−2^(m−1), 2^(m−1) − q] con m bits enteros incluido el signo (a confirmar).
+  1. Paso q = 2^−(W−I); rango [−2^(I−1), 2^(I−1) − q] (decisión 25).
   2. Redondeo `half_up` = `floor(x/q + 0.5)·q`, como el hardware típico; `"trunc"` = `floor(x/q)·q`.
   3. Saturar al rango; aplicar por separado a la parte real y a la imaginaria.
   4. `to_int(x, m, n)` para obtener los enteros en complemento a dos (se usan en C4 para los `.hex`).
@@ -810,7 +814,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 
 **Cuantización y exportación**
 - [x] C1.1 · Confirmar RFSoC, P, f<sub>clk</sub> y N<sub>max</sub>; actualizar `HardwareParams` y la fila 7 de §1 (dispositivo sin confirmar: queda parametrizado, decisión 7)
-- [ ] C2.1 · Definir la convención Qm.n (fila nueva en §1)
+- [x] C2.1 · Definir la convención Qm.n (fila nueva en §1): decisiones 25 a 28
 - [ ] C2.2 · `quantization.py` + tests
 - [ ] C3.1 · Exploración de bits de la ISI (notebook `05_cuantizacion`)
 - [ ] C3.2 · Exploración de bits de la CD
@@ -851,8 +855,8 @@ Todo lo que sigue toca código o configuración compartidos: requiere acuerdo o 
 |---|---|---|---|
 | Modelo de RFSoC, P, f<sub>clk</sub>, N<sub>max</sub> | Bloquea C3 (réplica radix-2²) y la exportación bit a bit | Parametrizado (decisión 7); falta elegir la arquitectura de la FFT ([CONTEXTO_FFT_CD.md](CONTEXTO_FFT_CD.md)) | mitigado |
 | N<sub>max</sub> en escenarios rápidos | A 200 GSa/s y 1000 km, R ≈ 5450 > 2048 | `cd_N` falla explícitamente; N<sub>max</sub> viene de `HardwareParams` | abierta |
-| Ubicación del modelo bit a bit | La Ref. lo pone en el golden; el repo tiene `models/fixed_point/emulador-real/` | Utilidades y exploración en el golden, modelo bit a bit en `fixed_point` | **requiere decisión** (afecta al equipo) |
-| Formatos Qm.n | Sin definir | Arrancar de Q2.8 / 10 bits (Jiang) | abierta |
+| Ubicación del modelo bit a bit | La Ref. lo pone en el golden; el repo tiene `models/fixed_point/emulador-real/` | Utilidades y exploración en el golden, modelo bit a bit en `fixed_point` con HALCON | decidido (decisiones 14 y 28); falta acuerdo del equipo |
+| Formatos Qm.n | Convención definida (decisión 25); faltan los anchos | Arrancar de `ac_fixed<10, 2>` (Q2.8 de Jiang) | abierta |
 | Tolerancia de la Tabla 4 (SNR eq. de la ISI) | El PDF no da tolerancia | ±0,5 dB | abierta |
 | EVM back-to-back | Con roll-off 0,1 y span 32 el piso es 0,58 % (medido en P3.3) | span 64: piso 0,12 % (decisión 15) | cerrada |
 | Criterio de "CD corta" contra la referencia | El PDF no lo define | Definir al hacer A4 | cerrada: decisión 20; el perfil se eliminó (decisión 24) |
