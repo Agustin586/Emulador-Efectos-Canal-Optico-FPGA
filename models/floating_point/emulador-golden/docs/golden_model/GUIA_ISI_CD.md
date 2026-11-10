@@ -92,7 +92,7 @@ La Ref. §4 propone una estructura genérica. Acá se adapta al repositorio, que
 | `emulador/cd/referencia.py` | `emulador/cd/reference.py` | crear | `cd_reference(x, fs, D, lam, z, S, full=False)` |
 | `emulador/cd/overlap_save.py` | `emulador/cd/overlap_save.py` | crear | `cd_hbar` (host), `cd_overlap_save` (FPGA) |
 | `emulador/cd/bloque.py` | `emulador/blocks/chromatic_dispersion.py` | completar esqueleto | Sigue en `REGISTRY["chromatic_dispersion"]`; corregir el signo del docstring y `fs` por defecto a 64e9 |
-| `emulador/cuantizacion.py` | `emulador/quantization.py` | crear | Solo utilidades Qm.n y barridos exploratorios |
+| `emulador/cuantizacion.py` | `emulador/quantization.py` | crear | Solo utilidades `ac_fixed<W, I>` (`quantize`, `to_int`) y barridos exploratorios |
 | `emulador/exportar.py` | `emulador/export.py` + `scripts/export_vectors.py` | crear | Escribe en `outputs/vectores/<isi\|cd>/<caso>/` |
 | `tests/test_config.py`, `test_isi.py`, `test_cd.py` | `tests/test_config.py`, `tests/test_metrics.py`, `tests/test_stimuli.py`, `tests/test_isi.py`, `tests/test_chromatic_dispersion.py`, `tests/test_quantization.py`, `tests/test_export.py`, `tests/data/` (regresiones) | crear | `tests/test_contract.py` tiene que seguir pasando |
 | `notebooks/0X_*.ipynb` | `notebooks/0X_*.ipynb` (nombres de la Ref. §7) | crear | Importan de `emulador/`; figuras en `docs/golden_model/figuras/` |
@@ -701,7 +701,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 - **Qué hacer:**
   1. Paso q = 2^−(W−I); rango [−2^(I−1), 2^(I−1) − q] (decisión 25).
   2. Redondeo `half_even` (por defecto) = `np.round(x/q)·q`, a par en empates (`AC_RND_CONV`); `"half_up"` = `floor(x/q + 0.5)·q` (`AC_RND`); `"trunc"` = `floor(x/q)·q`.
-  3. Saturar al rango; aplicar por separado a la parte real y a la imaginaria.
+  3. Saturar al rango (`saturate=False`: desborde en complemento a dos, `AC_WRAP`); aplicar por separado a la parte real y a la imaginaria.
   4. `to_int(x, W, I)` para obtener los enteros en complemento a dos (se usan en C4 para los `.hex`).
 - **Tests:**
 
@@ -842,7 +842,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] C1.1 · Confirmar RFSoC, P, f<sub>clk</sub> y N<sub>max</sub>; actualizar `HardwareParams` y la fila 7 de §1 (dispositivo sin confirmar: queda parametrizado, decisión 7)
 - [x] C2.1 · Definir la convención Qm.n (fila nueva en §1): decisiones 25 a 28
 - [x] C2.1b · Registrar la arquitectura de la FFT (decisión 31) y los anchos de partida de la CD y de la ISI (decisión 32); 14 y 28 como propuesta pendiente del equipo
-- [ ] C2.2 · `quantization.py` + tests
+- [x] C2.2 · `quantization.py` (`quantize`, `to_int` con (W, I)) + tests
 - [ ] C3.1 · Exploración de bits de la ISI (notebook `05_cuantizacion`)
 - [ ] C3.2 · Exploración de bits de la CD
 - [ ] C4.1 · `export.py` + tests
