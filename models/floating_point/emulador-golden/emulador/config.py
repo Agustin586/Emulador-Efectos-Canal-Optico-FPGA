@@ -22,13 +22,14 @@ QUIÉN USA CADA ELEMENTO (explicado en notebooks/00_escenario_y_convenciones.ipy
   - Scenario       : el canal (Rs, sps, lambda, roll-off -> fs, Ts). Lo usan los
                      perfiles de ISI (B = B_rel·Rs), la CD (R, N), los estímulos,
                      el receptor y los meta.json de los vectores exportados.
-  - HardwareParams : la implementación (P, f_clk, N_max), separada del canal
+  - HardwareParams : la implementación (P, f_clk, N_CD), separada del canal
                      porque un mismo canal admite distinto hardware. Lo usan cd_N
                      y el modelo bit a bit.
 """
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from typing import ClassVar
 
 # --------------------------------------------------------------------------
 # Constantes y conversión de unidades
@@ -103,23 +104,27 @@ class HardwareParams:
     """Parámetros del hardware, separados del escenario (describen la
     implementación, no el canal). GUIA_ISI_CD.md §1, decisión 7.
 
-    VALORES PROVISORIOS hasta confirmar el modelo de RFSoC (paso C1 de la guía).
+    P y f_clk son PROVISORIOS (placa ZCU208 confirmada; P y f_clk sin definir).
 
     P     : muestras por ciclo de la FFT radix-2^2 (potencia de 2).
     f_clk : frecuencia de reloj [Hz]; None mientras no esté definida.
-    N_max : máximo tamaño de bloque del overlap-save (potencia de 2, >= 128).
+    N_CD  : tamaño de bloque del overlap-save de la CD (FFT de L = 2·N_CD).
+            Es un parámetro de SÍNTESIS (dos versiones del hardware), fijo en
+            ejecución: en ejecución solo cambia H̄. Solo 512 o 2048 (decisión 30).
     """
+
+    N_CD_VALUES: ClassVar[tuple[int, ...]] = (512, 2048)
 
     P: int = 1
     f_clk: float | None = None
-    N_max: int = 2048
+    N_CD: int = 2048
     provisional: bool = True
 
     def __post_init__(self):
         if self.P < 1 or self.P & (self.P - 1):
             raise ValueError(f"P debe ser una potencia de 2: {self.P!r}")
-        if self.N_max < 128 or self.N_max & (self.N_max - 1):
-            raise ValueError(f"N_max debe ser una potencia de 2 >= 128: {self.N_max!r}")
+        if self.N_CD not in self.N_CD_VALUES:
+            raise ValueError(f"N_CD debe ser uno de {self.N_CD_VALUES}: {self.N_CD!r}")
         if self.f_clk is not None and self.f_clk <= 0:
             raise ValueError(f"f_clk debe ser positiva: {self.f_clk!r}")
 

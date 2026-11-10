@@ -7,7 +7,7 @@ PDF §4.7.2, Ec. 27 y 28, Fig. 8. Se separa en dos funciones, como en hardware:
 
 H̄[k] = H_CD(2π f_k) · exp(-j 2π k (N/2) / L): la fase lineal centra el chirp
 (no causal) en la ventana. Por eso la salida sale **retrasada N/2 muestras**.
-Hace falta N >= R (``cd_N``) para que la convolución circular de cada bloque
+Hace falta N >= R (``cd_N`` lo verifica para N_CD) para que la convolución circular de cada bloque
 coincida con la lineal (decisión 5).
 """
 from __future__ import annotations

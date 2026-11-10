@@ -77,33 +77,24 @@ def cd_R(fs: float, D: float, lam: float, z: float) -> int:
     return 2 * int(np.floor(abs(D) * lam**2 * z / (2 * C * Ts**2))) + 1
 
 
-def cd_N(
-    fs: float,
-    D: float,
-    lam: float,
-    z: float,
-    N_min: int = 128,
-    N_max: int = HardwareParams().N_max,
-) -> int:
-    """Tamaño de bloque N del overlap-save (decisión 5).
+def cd_N(R: int, N_CD: int | None = None) -> int:
+    """Tamaño de bloque N del overlap-save: el chequeo que hace el host (decisión 30).
 
-        N = max(N_min, menor potencia de 2 >= R)
-
+    N no se elige según R: es N_CD, un parámetro de síntesis del hardware
+    (512 o 2048, ``HardwareParams``), fijo en ejecución. La función solo
+    verifica que el chirp entre en el bloque (N >= R) y devuelve N_CD.
     La FFT del overlap-save tiene L = 2N puntos.
 
-    - fs, D, lam, z: como en ``cd_R``.
-    - N_min: N mínimo (potencia de 2).
-    - N_max: N máximo que admite el hardware; por defecto el de
-      ``HardwareParams`` (provisorio).
-    - return: N, potencia de 2.
+    - R: largo del chirp en muestras (``cd_R``).
+    - N_CD: tamaño de bloque del hardware; None -> ``HardwareParams().N_CD``.
+    - return: N = N_CD.
 
-    Lanza ``ValueError`` si N supera N_max.
+    Lanza ``ValueError`` si N_CD no es 512 ni 2048, o si R > N_CD.
     """
-    R = cd_R(fs, D, lam, z)
-    N = max(N_min, 1 << (R - 1).bit_length())
-    if N > N_max:
-        raise ValueError(f"cd_N: R = {R} requiere N = {N}, mayor que N_max = {N_max}")
-    return N
+    hw = HardwareParams() if N_CD is None else HardwareParams(N_CD=N_CD)
+    if R > hw.N_CD:
+        raise ValueError(f"cd_N: R = {R} no entra en N_CD = {hw.N_CD}")
+    return hw.N_CD
 
 
 def cd_summary(esc: Scenario, D: float, z: float, S: float = 0.0) -> dict:
@@ -118,17 +109,15 @@ def cd_summary(esc: Scenario, D: float, z: float, S: float = 0.0) -> dict:
         gd_slope_ps_GHz            : pendiente del retardo de grupo, -D λ² z / c.
         Dz_ps_nm                   : dispersión acumulada.
         R                          : largo del chirp en muestras (``cd_R``).
-        N                          : tamaño de bloque, sin acotar a N_max.
-        N_fits_hw                  : N <= ``HardwareParams().N_max``.
+        N_fits_hw                  : R <= ``HardwareParams().N_CD`` (2048).
         L_D_km                     : longitud de dispersión T0² / |β₂| para un
                                      pulso con T0 = 1/Rs (inf si D = 0).
 
     Ejemplo (SSMF, 100 km, 32 GBd, 2 sps): β₂ = -21,7 ps²/km, pendiente
-    -13,6 ps/GHz, R = 55, N = 128, L_D ≈ 45 km.
+    -13,6 ps/GHz, R = 55, L_D ≈ 45 km.
     """
     lam = esc.wavelength
     b2, b3 = betas(D, lam, S)
-    N = cd_N(esc.fs, D, lam, z, N_max=np.inf)
     T0 = 1 / esc.Rs
     return {
         "beta2_ps2_km": b2 / 1e-27,  # 1 ps²/km = 1e-27 s²/m
@@ -136,7 +125,6 @@ def cd_summary(esc: Scenario, D: float, z: float, S: float = 0.0) -> dict:
         "gd_slope_ps_GHz": -D * lam**2 * z / C / 1e-21,  # 1 ps/GHz = 1e-21 s/Hz
         "Dz_ps_nm": D * z / 1e-3,  # 1 ps/nm = 1e-3 s/m
         "R": cd_R(esc.fs, D, lam, z),
-        "N": N,
-        "N_fits_hw": N <= HardwareParams().N_max,
+        "N_fits_hw": cd_R(esc.fs, D, lam, z) <= HardwareParams().N_CD,
         "L_D_km": T0**2 / abs(b2) / 1e3 if b2 != 0.0 else np.inf,
     }

@@ -67,10 +67,20 @@ def test_scenario_to_dict():
 def test_hardware_params_are_provisional():
     hw = HardwareParams()
     assert hw.provisional
-    assert (hw.P, hw.f_clk, hw.N_max) == (1, None, 2048)
+    assert (hw.P, hw.f_clk, hw.N_CD) == (1, None, 2048)
 
 
-@pytest.mark.parametrize("kwargs", [{"P": 3}, {"P": 0}, {"N_max": 64}, {"N_max": 1000}, {"f_clk": -1.0}])
+def test_hardware_params_N_CD_values():
+    """Decisión 30: N_CD es de síntesis, solo 512 o 2048."""
+    assert HardwareParams.N_CD_VALUES == (512, 2048)
+    assert HardwareParams(N_CD=512).N_CD == 512
+    assert not hasattr(HardwareParams(), "N_max")
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [{"P": 3}, {"P": 0}, {"N_CD": 1024}, {"N_CD": 128}, {"N_CD": 4096}, {"N_CD": 1000}, {"f_clk": -1.0}],
+)
 def test_hardware_params_reject_invalid(kwargs):
     with pytest.raises(ValueError):
         HardwareParams(**kwargs)

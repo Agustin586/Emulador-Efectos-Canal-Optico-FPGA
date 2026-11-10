@@ -12,8 +12,8 @@ sin el factor ½ de la guía original. El compensador (CDC) usa H*.
 
 Implementación (decisión 5): muestreo en frecuencia + overlap-save con FFT de
 L = 2N puntos (``emulador/cd/overlap_save.py``), el mismo algoritmo que la FPGA.
-N = ``cd_N`` (max(128, menor potencia de 2 >= R), hasta N_max) o el que se pase,
-que tiene que cumplir N >= R.
+N = N_CD, parámetro de síntesis del hardware: 512 o 2048 (decisión 30), con
+N >= R (``cd_N``). En ejecución solo cambia H̄.
 
 Parámetros (unidades de hoja de datos; el cálculo interno es en SI):
   fs            : frecuencia de muestreo, Hz (por defecto 64 GSa/s: 32 GBd, 2 sps).
@@ -22,7 +22,8 @@ Parámetros (unidades de hoja de datos; el cálculo interno es en SI):
   wavelength_nm : longitud de onda de la portadora (1550 nm).
   length_km     : largo del enlace. Por defecto 0 (sin efecto).
   S_ps_nm2_km   : pendiente de dispersión (activa β₃; SSMF: 0,057). Por defecto 0.
-  N             : muestras nuevas por bloque; None -> ``cd_N``.
+  N             : muestras nuevas por bloque, 512 o 2048; None -> N_CD de
+                  ``HardwareParams`` (2048).
 
 Retardo (decisión 8):
   - ``delay_samples`` = N/2.
@@ -58,11 +59,11 @@ class ChromaticDispersion(Block):
         D = D_si(self.D_ps_nm_km)
         lam = self.wavelength_nm / 1e9  # / 1e9 (exacto) y no * 1e-9: mismo float que 1550e-9
         z = self.length_km * 1e3
-        if self.N is None:
-            self.N = cd_N(self.fs, D, lam, z)
         R = cd_R(self.fs, D, lam, z)
-        if self.N < 2 or self.N % 2 or self.N < R:
-            raise ValueError(f"chromatic_dispersion: N tiene que ser par y >= R = {R}: {self.N!r}")
+        try:
+            self.N = cd_N(R, self.N)  # None -> N_CD de HardwareParams (2048)
+        except ValueError as e:
+            raise ValueError(f"chromatic_dispersion: {e}") from None
         self.Hbar = cd_hbar(self.N, self.fs, D, lam, z, S_si(self.S_ps_nm2_km))
         self.delay_samples = self.N // 2
 

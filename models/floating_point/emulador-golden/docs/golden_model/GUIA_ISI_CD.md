@@ -23,9 +23,9 @@ Esta tabla es el **único registro de decisiones**:
 | 2 | Signo de la CD | **Positivo**: H<sub>CD</sub>(f) = exp(+jπDλ²z f²/c), equivalente a exp(−jβ(ω)z) con β₂ = −Dλ²/(2πc). El grupo del CDC confirmó (2026-10-24) que compensa con H*, la convención conjugada | aceptada |
 | 3 | Factor ½ de la guía original del proyecto | **Descartado**: emularía la mitad de la dispersión | aceptada |
 | 4 | Término β₃ | Incluido, con S = 0 por defecto (con S = 0, β₃ = 0 exacto) | aceptada |
-| 5 | Método de la CD | Muestreo en frecuencia + overlap-save; FFT de L = 2N; retardo N/2; N ≥ R; N automático = max(128, menor potencia de 2 ≥ R), hasta N<sub>max</sub>. **Para el hardware la reemplaza la decisión 30** (N ∈ {512, 2048}); `cd_N` sigue con esta regla hasta B5.2 | aceptada (N automático reemplazado por la 30) |
+| 5 | Método de la CD | Muestreo en frecuencia + overlap-save; FFT de L = 2N; retardo N/2; N ≥ R. **N = N<sub>CD</sub>, parámetro de síntesis (decisión 30)**. Antes: N automático = max(128, menor potencia de 2 ≥ R), hasta N<sub>max</sub>; se eliminó en B5.2 | aceptada (N automático reemplazado por la 30) |
 | 6 | ISI | FIR complejo causal, K ≤ 32, energía normalizada. Coeficientes diseñados en frecuencia: Bessel y Butterworth desde el prototipo analógico, **nunca con la transformación bilineal**. Perfil principal: Bessel m = 4, B = 0,6 R<sub>s</sub>, K = 16. Regla: K = 32 si B ≤ 0,4 R<sub>s</sub> y m ≥ 4. Por defecto, el bloque queda en bypass | aceptada |
-| 7 | Hardware | **Placa confirmada (2026-11-06): ZCU208** (RFSoC Gen3, XCZU48DR), **ADC y DAC de 14 bits**. El host calcula H̄ con la f<sub>s</sub> **emulada** (64, 72 o 120 GSa/s), no con la de los conversores. P, f<sub>clk</sub> y N<sub>max</sub> siguen **parametrizados** en `HardwareParams` (valores provisorios, `provisional=True`): N<sub>max</sub> = 2048 por la decisión 30, y la arquitectura de la FFT de la CD en [Arquitectura de la FFT del bloque de CD — Recomendación y especificación](<Arquitectura de la FFT del bloque de CD — Recomendación y especificación.pdf>) (2026-10-31, preliminar: se evalúa bajar N para simplificar el hardware). Antes (2026-10-27): modelo de RFSoC sin confirmar. Reemplaza la suposición de Artix-7 del PDF | aceptada (placa confirmada; P, f<sub>clk</sub> y N<sub>max</sub> parametrizados) |
+| 7 | Hardware | **Placa confirmada (2026-11-06): ZCU208** (RFSoC Gen3, XCZU48DR), **ADC y DAC de 14 bits**. El host calcula H̄ con la f<sub>s</sub> **emulada** (64, 72 o 120 GSa/s), no con la de los conversores. P y f<sub>clk</sub> siguen **parametrizados** en `HardwareParams` (valores provisorios, `provisional=True`); N<sub>CD</sub> ∈ {512, 2048} es de síntesis (decisión 30), y la arquitectura de la FFT de la CD en [Arquitectura de la FFT del bloque de CD — Recomendación y especificación](<Arquitectura de la FFT del bloque de CD — Recomendación y especificación.pdf>) (2026-10-31, preliminar: se evalúa bajar N para simplificar el hardware). Antes (2026-10-27): modelo de RFSoC sin confirmar. Reemplaza la suposición de Artix-7 del PDF | aceptada (placa confirmada; P y f<sub>clk</sub> parametrizados) |
 | 8 | Retardo | En ISI y CD, `process()` devuelve la salida **alineada** (descuenta el retardo entero; el fraccionario no se corrige). El bloque expone `delay_samples`, `coefficients()` y `process_hw()` (salida cruda, como el hardware, que es la que se exporta) | aceptada |
 | 9 | Extensión de `Block` | Agregar esas tres piezas a `common.Block` con valores neutros. Hasta que haya acuerdo, se definen solo en ISI y CD | confirmada; falta acuerdo del equipo |
 | 10 | Estímulos | Módulo nuevo `emulador/stimuli/`, sin tocar `common.py` | confirmada; falta acuerdo del equipo |
@@ -39,16 +39,16 @@ Esta tabla es el **único registro de decisiones**:
 | 18 | Referencia ideal de la CD (`cd_reference`) | Con `full=True` devuelve **las L muestras** del buffer de la FFT (x[n] ↔ y[pad + n], pad = R + 64 = `cd_reference_pad`), así la energía se conserva (rel. ~1e-16). Reversibilidad (D, S) → (−D, −S): **NRMSE < 1e-5**, no 1e-12: las colas del chirp discreto decaen como ~1/n, no entran en el relleno y dan la vuelta. El piso crece con z y baja con el largo de la señal (4096 símbolos QAM16: 1,0e-6 a 100 km, 2,8e-6 a 500 km, 7,3e-6 a 2000 km; con 2048 símbolos, 2,0e-5 a 2000 km). Sobre la misma grilla de L puntos, H* deshace H exacto (1e-12) | aceptada |
 | 19 | Criterios de Bessel y Butterworth (A3) | A 2 sps, con B > 0,5·R<sub>s</sub>, el prototipo analógico no está limitado en banda en f<sub>s</sub>/2 y el −3 dB se corre (hasta 0,66 dB con m = 2; 0,4 dB con Bessel m = 6, B = 0,6·R<sub>s</sub>); a 4 sps, con K y d al doble, el desvío baja a 0,11 dB: es el muestreo, no el diseño. Criterios: **−3 dB ±0,3 dB y energía ≥ 98,5 %** a 2 sps para B ≤ 0,5·R<sub>s</sub> (m = 2…6) y para el perfil principal (B = 0,6·R<sub>s</sub>, m = 4), y a 4 sps para B = 0,3…0,8·R<sub>s</sub>. **Fidelidad** (< 0,5 dB y < 0,4 muestras) en la banda pasante \|f\| ≤ B, no en \|H<sub>P</sub>\| > −20 dB: cerca de Nyquist el FIR no puede seguir al prototipo y hay ceros profundos. Vale para m ≥ 3 y B ≤ 0,7·R<sub>s</sub> (Bessel m = 3, B = 0,8·R<sub>s</sub>: 0,82 dB). Perfil principal: 0,06 dB y 0,03 muestras | aceptada |
 | 20 | Perfil `cd_short` (A4) | Taps de Savory normalizados, R ≤ 31 (K ≤ 32 y R impar: ~55 km de SSMF a 64 GSa/s). Con **R = 1** (z ≤ 3 km) devuelve **[1]**: el único tap de Savory sería una rotación de 45° (NRMSE ~0,7 contra la referencia; [1] da ≤ 0,15). Cursor = tap central (los taps tienen todos la misma magnitud). **Es ilustrativo**: el truncamiento abrupto del chirp deja 2 a 5 dB de ondulación en la banda. NRMSE contra `cd_reference` (QAM16, 4096 símbolos, 2 sps), medido: 0,38 (10 km), 0,23 (20), 0,19 (30), 0,17 (40), 0,14 (55); con R = 3 es peor que no aplicar nada. Criterio de test: < 0,40 a 10 km, < 0,25 a 20–30 km, < 0,20 a 40–55 km | **reemplazada por la 24** (perfil eliminado) |
-| 21 | Overlap-save contra la referencia (B3) | Con N = `cd_N`, el error depende de cuánta energía tiene la señal cerca de Nyquist: las colas del chirp que no entran en N muestras son las de frecuencia instantánea alta. **QAM16** (32 GBd, 2 sps, roll-off 0,1): NRMSE < 1e-2 a 100/500/1000/2000 km (medido 1,6e-3, 5e-4, 3e-4, 2e-4); peor punto del rango de N = 128 (229 km, R = 127): 9,8e-3, criterio < 1,5e-2. **Ruido blanco** (toda la banda, peor caso): NRMSE < 2e-2 a las mismas distancias (medido 0,7e-2 a 1,4e-2), no < 1e-2; en 229 km llega a 5e-2 | aceptada (propuesta, revisar) |
+| 21 | Overlap-save contra la referencia (B3) | El error del método depende de cuánta energía tiene la señal cerca de Nyquist: las colas del chirp que no entran en N muestras son las de frecuencia instantánea alta. **QAM16** (32 GBd, 2 sps, roll-off 0,1), con N = N<sub>CD</sub> = 2048 (decisión 30): NRMSE 1,1e-5 / 5,4e-5 / 1,1e-4 / 2,3e-4 a 100/500/1000/2000 km; con N = 512: 8,9e-5 / 5,1e-4 a 100/500 km. Criterio < 1e-2. Peor caso del método (test con N = 128 explícito, fuera de los N del hardware): 229 km, R = 127, 9,8e-3, criterio < 1,5e-2. **Ruido blanco** (toda la banda, peor caso), con N = 2048: 4,8e-4 / 2,4e-3 / 4,8e-3 / 9,7e-3, criterio < 2e-2; con N = 128 en 229 km llega a 5e-2. Antes (B3, con el N automático de la decisión 5): QAM16 1,6e-3 / 5e-4 / 3e-4 / 2e-4, ruido 0,7e-2 a 1,4e-2 | aceptada (propuesta, revisar) |
 | 22 | SNR equivalente de la ISI (A5) | Instante óptimo: perfil diseñado con 16 sps (K y d ×8, mismo tiempo que a 2 sps) y la mejor de las 16 fases (`isi.isi_snr_eq`). Reproduce los 9 valores de la Tabla 4 del PDF con diferencia ≤ 0,1 dB; criterio **±0,2 dB** (el PDF redondea a 0,1). Grilla fija (2 sps, muestreo en el cursor entero): gaussiano igual al óptimo; Bessel m = 4 pierde 5 a 10 dB (10,1 / 10,2 / 18,3 dB con B = 0,4 / 0,5 / 0,6·R<sub>s</sub>); Butterworth m = 4 hasta 19 dB (7,7 / 15,3 / 6,6 dB) | aceptada (propuesta, revisar) |
 | 23 | Residuo de β₃ (B4, Tabla 17) | Canal `cd_reference(D, S = 0,057, full=True)` → compensación `cd_reference(−D, S = 0, full=True)` → `rx.recover` (`cd.beta3_residual`). β₃ agrega un retardo global con parte fraccionaria (τ(ω) = β₃zω²/2 tiene media no nula). **`timing="grid"`** (fases enteras a 2 sps, como el PDF): a 1000 km, EVM 0,69 / 5,49 / 21,2 % a 32 / 64 / 100 GBd (PDF: 0,7 / 5,6 / 22 %), criterio ±5 %. **`timing="ideal"`** (además, el mejor retardo fraccionario continuo, como una recuperación de temporización perfecta): 0,29 / 2,2 / 8,3 %, criterio ±10 %; es la ISI residual de β₃ sola y crece monótonamente con la tasa. **La Tabla 17 mezcla un error de temporización del receptor** (0,69 → 0,29 %; 5,5 → 2,2 %; 21 → 8,3 %). A 200 GBd: EVM 69 % con las dos (SNR equivalente 3,2 dB), no > 100 %: `evm_opt` usa la ganancia óptima y no pasa de 100 %. Criterio: EVM > 50 %. Control sin β₃: 0,12 %, criterio < 0,2 % | aceptada (propuesta, revisar) |
 | 24 | Taps de Savory y perfil `cd_short` | **Eliminados** del código, de los tests y de los notebooks (2026-10-12): el perfil era solo ilustrativo (decisión 20) y no se usa. La CD se emula únicamente con el bloque `ChromaticDispersion` (overlap-save). El bloque `ISI` pierde los campos `D_ps_nm_km`, `wavelength_nm` y `length_km`, que solo usaba ese perfil. La justificación del overlap-save frente a un FIR en el tiempo queda en el largo del chirp R (55 taps a 100 km, 1117 a 2000 km, contra K ≤ 32) | aceptada |
 | 25 | Convención de formato de punto fijo | La de `ac_fixed<W, I, S>` de Algorithmic C, que usa HALCON: **W bits totales, I bits enteros incluido el signo**, W − I fraccionarios (paso q = 2^−(W−I)). Rango con signo: [−2^(I−1), 2^(I−1) − q]. El Q2.8 de Jiang es `ac_fixed<10, 2, true>`. La misma notación en Python (`quantization.py`) y en C++ | aceptada |
 | 26 | Redondeo y desborde | **Modificada 2026-11-06.** Por defecto **redondeo a par en empates (`AC_RND_CONV` de `ac_fixed`; en Python, `np.round(x/q)·q`) y `AC_SAT` (saturación)**, en Python y en HALCON. **Propuesta de dónde aplicarlo:** en todos los puntos de cuantización de la CD y de la ISI: modelo del ADC (entrada), H̄ y h[k], salida de cada etapa de la FFT y de la IFFT (escalado entre etapas) y salida al DAC. Motivo: el redondeo a par no tiene sesgo, y el half-up suma +q/2 en cada empate; en una FFT de log₂L etapas ese sesgo se acumula como un error de continua que no baja con más bits. Además, `np.round` ya redondea a par, así que Python y HALCON coinciden bit a bit sin código propio. Costo en hardware: unas pocas LUT por redondeo para detectar el empate (bits descartados = 100…0) y mirar el LSB. Se puede cambiar por señal en la exploración de bits (por ejemplo, truncar donde el sesgo no importa) si se justifica por recursos. Antes: `AC_RND` (half-up) | aceptada (redondeo a par); puntos de aplicación: propuesta, revisar |
-| 27 | Criterio de aceptación de un formato | **NRMSE de la salida en punto fijo contra la salida en flotante** (no contra la referencia ideal, para no mezclar error de método y de cuantización): ≤ 1/10 del error del método en la CD (decisión 21) y ≤ 1e-3 en la ISI | aceptada |
+| 27 | Criterio de aceptación | **Modificada 2026-11-10 (B5.2).** Criterios **absolutos** sobre el **error total** (método + cuantización) contra `cd_reference`: **aceptación NRMSE < 1e-2** (Tabla 10 del PDF y test B.6) y **objetivo de diseño NRMSE < 1e-3**. Para el punto fijo de la CD, además: el **error interno** del bloque (FFT + ×H̄ + IFFT) tiene que ser **como máximo la mitad del error de cuantizar la entrada a 14 bits** (ADC), para que el bloque no degrade lo que ya limita el conversor. ISI, sin cambios: ≤ 1e-3 contra la salida en flotante. Motivo: con N = 2048 el error del método baja a 1e-5…2e-4 (decisión 21), y 1/10 de él quedaba por debajo de lo que permiten el ADC y el DAC de 14 bits. Antes: NRMSE contra la salida en flotante ≤ 1/10 del error del método en la CD | aceptada (1e-2 y error interno); objetivo 1e-3: propuesta, a confirmar con el equipo |
 | 28 | Herramienta del modelo en punto fijo | **HALCON** (simulador de DSP en C++ de Fundación Fulgor, sugerido al equipo). Los simuladores van en `models/fixed_point/emulador-real/`; HALCON es una **dependencia externa clonada aparte** (no submódulo), con la versión usada anotada. Python corre en el host (el contenedor de HALCON trae Python 3.8 y el paquete pide ≥ 3.10) e intercambia archivos con el simulador | confirmada; falta acuerdo del equipo |
-| 29 | Tasa del emulador y referencia de arquitectura | Respuesta del equipo (2026-10-27): la referencia principal es **Fiber-on-Chip** (Börjeson y Larsson-Edefors, 2023). **La tasa no está definida: todo queda parametrizado** (f<sub>s</sub>, P, f<sub>clk</sub>, N<sub>max</sub>); no se diseña para un escenario fijo. Las pruebas usan valores de interés (los escenarios ya usados: 64 GSa/s a 2 sps, 72 GSa/s a 1,2 sps, 120 GSa/s, de 100 a 2000 km). La arquitectura de la FFT tiene que admitir cualquier P y el modelo en punto fijo tiene que dar el mismo resultado bit a bit para cualquier P | confirmada |
-| 30 | Tamaño de bloque N de la CD (B5) | **Decisión del equipo (2026-11-06): N ∈ {512, 2048}**, es decir, la FFT del hardware admite dos tamaños, L = 1024 y L = 4096. El host elige **N = 512 si R ≤ 512 y N = 2048 si 512 < R ≤ 2048**; **N<sub>max</sub> = 2048**. Reemplaza el N automático de la decisión 5 (max(128, potencia de 2 ≥ R)) para el hardware. Alcance con D = 17 ps/(nm·km) (de `cd_R`): N = 512 hasta 918 / 725 / 261 km y N = 2048 hasta 3670 / 2900 / 1044 km a 64 / 72 / 120 GSa/s. Contexto: el documento de arquitectura (preliminar) evaluaba bajar N para simplificar el hardware. Falta aplicarlo al código (`cd_N`, `HardwareParams`): B5.2 | aceptada; falta aplicarla al código |
+| 29 | Tasa del emulador y referencia de arquitectura | Respuesta del equipo (2026-10-27): la referencia principal es **Fiber-on-Chip** (Börjeson y Larsson-Edefors, 2023). **La tasa no está definida: todo queda parametrizado** (f<sub>s</sub>, P, f<sub>clk</sub>, N<sub>max</sub>; N<sub>max</sub> pasó a ser N<sub>CD</sub>, decisión 30); no se diseña para un escenario fijo. Las pruebas usan valores de interés (los escenarios ya usados: 64 GSa/s a 2 sps, 72 GSa/s a 1,2 sps, 120 GSa/s, de 100 a 2000 km). La arquitectura de la FFT tiene que admitir cualquier P y el modelo en punto fijo tiene que dar el mismo resultado bit a bit para cualquier P | confirmada |
+| 30 | Tamaño de bloque N de la CD (B5) | **Decisión del equipo (2026-11-06), aplicada en B5.2 (2026-11-10).** N = **N<sub>CD</sub> ∈ {512, 2048}** (L = 1024 o 4096) es un **parámetro de síntesis**: dos versiones del hardware, fijo en ejecución; en ejecución solo cambia H̄. **No se elige según R**: el host solo verifica R ≤ N<sub>CD</sub> (`cd_N(R, N_CD)`, `ValueError` si no). `HardwareParams.N_CD` = 2048 por defecto y `ValueError` con cualquier valor que no sea 512 o 2048. N<sub>max</sub> deja de existir como concepto aparte: es N<sub>CD</sub>. Reemplaza el N automático de la decisión 5 (y a la regla de B5.1, en la que el host elegía 512 o 2048 según R). Alcance con D = 17 ps/(nm·km) (último z con R ≤ N, de `cd_R`): N<sub>CD</sub> = 512 hasta 917,5 / 724,9 / 260,9 km y N<sub>CD</sub> = 2048 hasta 3670,1 / 2899,8 / 1043,9 km a 64 / 72 / 120 GSa/s | aceptada (aplicada) |
 
 ---
 
@@ -78,7 +78,7 @@ La Ref. §4 propone una estructura genérica. Acá se adapta al repositorio, que
 
 | Referencia | Archivo real | Estado | Integración |
 |---|---|---|---|
-| `emulador/config.py` | `emulador/config.py` | crear | `C`, `D_si`, `S_si`, `Scenario(Rs, sps, wavelength, rolloff)` con `fs`/`Ts`, y `HardwareParams(P, f_clk, N_max)` (provisorio, separado del escenario) |
+| `emulador/config.py` | `emulador/config.py` | crear | `C`, `D_si`, `S_si`, `Scenario(Rs, sps, wavelength, rolloff)` con `fs`/`Ts`, y `HardwareParams(P, f_clk, N_CD)` (P y f_clk provisorios, separado del escenario) |
 | `emulador/base.py` | `emulador/common.py` (`Block`) | existe, **no se modifica** | Mientras no se acepte el cambio en `Block`, `delay_samples`/`coefficients()`/`process_hw()` se definen en cada bloque |
 | `emulador/metricas.py` | `emulador/metrics.py` | crear | Reusa `common.evm_percent`; agrega `nrmse`, `group_delay`, `snr_eq_db`, `rms_width`, `peak_distortion`, `isi_power_ratio` |
 | `emulador/estimulos/{prbs,mapper,pulso,pruebas}.py` | `emulador/stimuli/{prbs,mapper,pulse,test_signals}.py` | crear | `pulse.py` reusa `common.rrc_taps`. `gen_signal` queda para `test_contract`/`run_block` |
@@ -120,7 +120,7 @@ class ChromaticDispersion(Block):
     wavelength_nm: float = 1550.0
     length_km: float = 0.0
     S_ps_nm2_km: float = 0.0
-    N: int | None = None       # None -> cd_N (max(128, pot. de 2 >= R))
+    N: int | None = None       # 512 o 2048; None -> HardwareParams().N_CD (2048), con R <= N
     name = "chromatic_dispersion"
     # delay_samples = N/2; coefficients() = {"Hbar": Hbar}
     # process(x): OLS alineado (descuenta N/2)   process_hw(x): OLS crudo
@@ -213,7 +213,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
   3. **`@dataclass(frozen=True) class Scenario`** con `Rs=32e9`, `sps=2`, `wavelength=1550e-9` y `rolloff=0.1`, y las propiedades `fs = Rs·sps` y `Ts = 1/fs`.
      - Validar en `__post_init__`: R<sub>s</sub> ∈ [1, 300] GBd; sps ∈ {1, 2, 4, 8, 16}; λ ∈ [1530, 1565] nm; roll-off ∈ [0,05, 0,5].
      - Agregar `to_dict()` para guardarlo en los `meta.json`.
-  4. **`@dataclass(frozen=True) class HardwareParams`** con `P=1`, `f_clk=None` y `N_max=2048`, y `provisional: bool = True`. Queda separado del escenario porque describe la implementación, no el canal (Ref. B.8).
+  4. **`@dataclass(frozen=True) class HardwareParams`** con `P=1`, `f_clk=None` y `N_max=2048` (desde B5.2, `N_CD=2048`, decisión 30), y `provisional: bool = True`. Queda separado del escenario porque describe la implementación, no el canal (Ref. B.8).
   5. Docstring de módulo con la tabla de convenciones de la Ref. §3: SI, `fftfreq`, signo positivo y retardos.
 - **Tests:**
 
@@ -523,9 +523,9 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
      - si S = 0, devolver β₃ = 0 exacto (decisión 4: con S = 0 el modelo es el de solo β₂).
   2. `cd_transfer(L, fs, D, lam, z, S=0.0)` = exp(−j(β₂ω²/2 + β₃ω³/6)z), con ω = 2π·`fftfreq(L, 1/fs)` (PDF Ec. 18). Con β₃ = 0 da exp(+jπDλ²z f²/c).
   3. `cd_R(fs, D, lam, z)` = 2·⌊\|D\|λ²z/(2cT<sub>s</sub>²)⌋ + 1 (PDF Ec. 26).
-  4. `cd_N(fs, D, lam, z, N_min=128, N_max=HardwareParams().N_max)` = max(N_min, 2^⌈log₂R⌉), con `ValueError` si supera N<sub>max</sub> (decisión 5).
+  4. `cd_N(R, N_CD=None)` = N<sub>CD</sub> (512 o 2048; None → `HardwareParams().N_CD`), con `ValueError` si R > N<sub>CD</sub> (decisión 30, desde B5.2). Hasta B5.2 era `cd_N(fs, D, lam, z)` = max(128, 2^⌈log₂R⌉), hasta N<sub>max</sub> (decisión 5).
   5. ~~`savory_taps(fs, D, lam, z)`~~ (eliminado, decisión 24).
-  6. `cd_summary(esc, D, z, S)`: dict con β₂ [ps²/km], β₃ [ps³/km], pendiente del retardo de grupo [ps/GHz], R, N y L<sub>D</sub> para T₀ = 1/R<sub>s</sub> (PDF Tabla 15).
+  6. `cd_summary(esc, D, z, S)`: dict con β₂ [ps²/km], β₃ [ps³/km], pendiente del retardo de grupo [ps/GHz], R, `N_fits_hw` (R ≤ N<sub>CD</sub>) y L<sub>D</sub> para T₀ = 1/R<sub>s</sub> (PDF Tabla 15).
 - **Tests:**
 
   | Test | Cómo | Criterio |
@@ -538,7 +538,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
   | Compatibilidad | S = 0 contra modelo sin β₃ | idéntico (exacto) |
   | Valores de tabla | β₂ = −21,7 ps²/km; β₃ ≈ 0,13 ps³/km | rel. < 1 % |
   | R | 40 GSa/s: 10 km → 3, 500 km → 109; 64 GSa/s: 10/100/500/1000/2000 km → 5/55/279/559/1117 | exacto |
-  | N | R ≤ 128 → 128; 500 km → 512; 2000 km → 2048; N<sub>max</sub> = 1024 con 2000 km | exacto / `ValueError` |
+  | N (desde B5.2) | N<sub>CD</sub> = 512: R = 511 → 512, R = 513 falla; N<sub>CD</sub> = 2048: R = 2047 → 2048, R = 2049 falla; N<sub>CD</sub> = 1024 falla; 64 GSa/s: 917 km entra en 512, 918 no; 3670 km entra en 2048, 3671 no | exacto / `ValueError` |
 
 - **Notebook:** `03_cd_modelo_fisico.ipynb` (primera parte): magnitud (= 1), fase parabólica y retardo de grupo lineal para 10/50/100 km (Fig. 4 del PDF) y tabla de R. Completa `00_…` con las magnitudes derivadas.
 - **Errores a evitar:**
@@ -596,7 +596,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
      - descartar las primeras N muestras y entregar las N últimas.
      - La salida queda retrasada N/2.
   3. **Bloque**, con campos según §2.3:
-     - `__post_init__`: convertir con `D_si`/`S_si`, λ·10⁻⁹ y z·10³; N = `N` o `cd_N(...)`; validar N par ≥ 2; precalcular `self.Hbar`;
+     - `__post_init__`: convertir con `D_si`/`S_si`, λ·10⁻⁹ y z·10³; N = `cd_N(R, N)` (512 o 2048, decisión 30; antes N automático y N par ≥ R); precalcular `self.Hbar`;
      - `delay_samples = N // 2`; `coefficients() = {"Hbar": Hbar, "N": N}`;
      - `process_hw(x)`: `cd_overlap_save` recortado a len(x), fila por fila si la forma es (2, n);
      - `process(x)`: agregar N/2 ceros al final, aplicar OLS y tomar [N/2 : N/2 + n];
@@ -606,7 +606,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 
   | Test | Cómo | Criterio |
   |---|---|---|
-  | Contra la referencia | z = 100/500/1000/2000 km; N = `cd_N`; comparar y[N/2 : N/2+m] con r[:m], m = n − 2N | QAM16: NRMSE < 10⁻²; ruido complejo de 20 000 muestras: < 2·10⁻² (decisión 21) |
+  | Contra la referencia | z = 100/500/1000/2000 km; N = `cd_N(R)` (2048); comparar y[N/2 : N/2+m] con r[:m], m = n − 2N | QAM16: NRMSE < 10⁻²; ruido complejo de 20 000 muestras: < 2·10⁻² (decisión 21) |
   | Retardo declarado | `delay_samples` | N/2 (exacto) |
   | Alineada contra cruda | `process` contra `process_hw` desplazado N/2 | exacto |
   | Identidad | `length_km=0` | ~10⁻¹⁵; `test_contract` pasa |
@@ -628,7 +628,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 - **Objetivo:** reproducir las Figs. 9 y 10 del PDF y cerrar los notebooks 03 y 04.
 - **Depende de:** B3, P4. A4 es opcional (curva del FIR truncado).
 - **Para qué:**
-  - la Fig. 9 justifica la regla N ≥ R y dimensiona N<sub>max</sub> para el hardware;
+  - la Fig. 9 justifica la regla N ≥ R y el alcance de cada N<sub>CD</sub> del hardware (decisión 30);
   - la Fig. 10 justifica la decisión 4 (incluir β₃): muestra la ISI residual que queda cuando el compensador solo invierte β₂ (PDF §6.2).
 - **Archivos:** ~ `notebooks/03_cd_modelo_fisico.ipynb`, + `notebooks/04_cd_overlap_save.ipynb`, ~ `tests/test_chromatic_dispersion.py`, opcional + `scripts/sweep_cd.py`.
 - **Qué hacer:**
@@ -656,17 +656,18 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 
 Último paso en punto flotante: después de B5 la CD sigue en punto fijo (C2 a C4).
 
-- **Objetivo:** registrar y aplicar la decisión del equipo sobre N: N ∈ {512, 2048}, N<sub>max</sub> = 2048 (decisión 30).
+- **Objetivo:** registrar y aplicar la decisión del equipo sobre N: N = N<sub>CD</sub> ∈ {512, 2048}, parámetro de síntesis (decisión 30).
 - **Depende de:** B3, B4 y la decisión 7 (ZCU208).
 - **Para qué:** N fija el tamaño de la FFT (L = 2N), los recursos y la latencia; C3 (exploración de bits de la CD) necesita saber sobre qué L trabajar.
 - **Archivos:** ~ §1 (decisiones 5, 7 y 30); en B5.2, ~ `emulador/cd/physics.py` (`cd_N`), ~ `emulador/config.py` (`HardwareParams`), ~ `tests/test_chromatic_dispersion.py`, ~ `tests/test_config.py`.
 - **Qué hacer:**
   1. **B5.1:** registrar la decisión 30 en §1 y ajustar las decisiones 5 y 7.
-  2. **B5.2:** proponer el cambio de `cd_N` (N = 512 si R ≤ 512, 2048 si 512 < R ≤ 2048, `ValueError` si R > 2048) y de `HardwareParams` (N<sub>max</sub> = 2048, tamaños admitidos {512, 2048}). Cambia funciones existentes y tests de tabla: se acuerda antes de tocar el código. Revisar la decisión 27, cuyo criterio es relativo al error del método.
-- **Tests (B5.2):** tabla de `cd_N` en los bordes (R = 511, 513, 2047, 2049) y a las distancias de referencia; `HardwareParams()` con los valores decididos.
+  2. **B5.2 (hecho):** `HardwareParams.N_CD` = 2048, solo {512, 2048}, sin `N_max`; `cd_N(R, N_CD)` devuelve N<sub>CD</sub> si R ≤ N<sub>CD</sub> y `ValueError` si no (N no se elige según R); el bloque `ChromaticDispersion` solo acepta N ∈ {512, 2048}; `cd_summary` pierde la clave `"N"`. Notebooks 00, 03, 04, 07 y `entregas/07` corridos con N<sub>CD</sub> = 2048. Decisión 27 reemplazada por criterios absolutos.
+  3. **B5.3 (opcional, antes de C4):** que `Scenario` y `comm_signal` admitan sps racional (UP/DOWN), para generar la señal de 1,2 sps del proyecto dentro de `stimuli/` (hoy el notebook 07 la arma a 6 sps y decimando por 5). Cambia funciones existentes: proponer antes. No frena C2 ni C3.
+- **Tests (B5.2):** `cd_N` en los bordes (R siempre impar): con N<sub>CD</sub> = 512, R = 511 pasa y 513 falla; con 2048, 2047 pasa y 2049 falla; N<sub>CD</sub> = 1024 falla. Tabla a 64 GSa/s (B1.3 reescrita) y `HardwareParams()` con los valores decididos.
 - **Errores a evitar:** cambiar `cd_N` sin actualizar los tests de tabla de B1.3 ni los notebooks que dependen del N automático (03, 04 y 07).
 - **Verificar:** `pytest`.
-- **Listo cuando:** la decisión 30 está aplicada en el código y los tests pasan.
+- **Listo cuando:** la decisión 30 está aplicada en el código y los tests pasan (B5.2); B5.3 es opcional.
 
 ---
 
@@ -674,14 +675,14 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 
 #### C1 · Cerrar parámetros de hardware — S
 
-- **Objetivo:** confirmar el modelo de RFSoC, P, f<sub>clk</sub> y N<sub>max</sub>.
+- **Objetivo:** confirmar el modelo de RFSoC, P, f<sub>clk</sub> y N<sub>CD</sub>.
 - **Depende de:** información externa (dirección de tesis, equipo de RTL).
 - **Para qué:** el modelo bit a bit de la CD tiene que replicar las etapas radix-2² y el escalado de la FFT elegida (Ref. B.8). Sin esto, C3 no puede cerrarse para la CD.
 - **Archivos:** ~ `emulador/config.py` (`HardwareParams`), ~ fila 7 de §1.
 - **Qué hacer:**
   1. Relevar: dispositivo (DS889), DSP disponibles y f<sub>clk</sub> alcanzable.
   2. Fijar P según la tasa de emulación deseada: R<sub>CD</sub> = P·f<sub>clk</sub>/2.
-  3. Fijar N<sub>max</sub> según la distancia máxima emulada: decidido, N<sub>max</sub> = 2048 (decisión 30).
+  3. Fijar N según la distancia máxima emulada: decidido, N<sub>CD</sub> ∈ {512, 2048}, de síntesis (decisión 30).
   4. Actualizar la fila 7 de §1 y `HardwareParams` con `provisional=False`.
 - **Tests:** `HardwareParams()` por defecto = valores decididos (exacto).
 - **Notebook:** `04_cd_overlap_save.ipynb`, sección de hardware.
@@ -832,7 +833,8 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 
 *Hito 5 · Cierre en flotante de la CD* (último paso en punto flotante; después sigue el punto fijo)
 - [x] B5.1 · Registrar la decisión del equipo: N ∈ {512, 2048}, N<sub>max</sub> = 2048 (decisión 30; ajusta 5 y 7)
-- [ ] B5.2 · Aplicar la decisión 30 en `cd_N` y `HardwareParams` + tests (proponer antes); revisar la decisión 27
+- [x] B5.2 · Aplicar la decisión 30 (N<sub>CD</sub> de síntesis) en `cd_N`, `HardwareParams` y el bloque + tests; notebooks 00, 03, 04, 07 y `entregas/07`; decisión 27 con criterios absolutos
+- [ ] B5.3 · (opcional, antes de C4) `Scenario` y `comm_signal` con sps racional (1,2 sps)
 
 **Cuantización y exportación**
 - [x] C1.1 · Confirmar RFSoC, P, f<sub>clk</sub> y N<sub>max</sub>; actualizar `HardwareParams` y la fila 7 de §1 (dispositivo sin confirmar: queda parametrizado, decisión 7)
@@ -876,9 +878,9 @@ Todo lo que sigue toca código o configuración compartidos: requiere acuerdo o 
 | Tema | Riesgo o pregunta | Propuesta | Estado |
 |---|---|---|---|
 | Modelo de RFSoC, P, f<sub>clk</sub>, N<sub>max</sub> | Bloquea C3 (réplica radix-2²) y la exportación bit a bit | Parametrizado (decisión 7); falta elegir la arquitectura de la FFT ([Arquitectura de la FFT del bloque de CD — Recomendación y especificación](<Arquitectura de la FFT del bloque de CD — Recomendación y especificación.pdf>)) | mitigado |
-| N<sub>max</sub> en escenarios rápidos | A 200 GSa/s y 1000 km, R ≈ 5450 > 2048; a 120 GSa/s, N = 2048 alcanza solo 1044 km (2000 km pediría N = 4096) | N<sub>max</sub> = 2048 (decisión 30); `cd_N` falla explícitamente por encima | aceptado (límite conocido) |
-| Criterio de la decisión 27 con N = 2048 | Con N mucho mayor que R el error del método baja mucho; 1/10 de él puede quedar por debajo de lo que permiten el ADC y el DAC de 14 bits | Medirlo y revisarlo en B5.2 o C3 (por ejemplo, un criterio absoluto) | abierta |
-| 1,2 sps en `Scenario` | La tasa del proyecto es 1,2 sps y `Scenario` solo admite sps ∈ {1, 2, 4, 8, 16}; el notebook 07 la arma a 6 sps y decimando por 5, fuera de `stimuli/` | Proponer que `Scenario` y `comm_signal` admitan sps racional (UP/DOWN); cambia funciones existentes, así que antes se acuerda | abierta |
+| Alcance de N<sub>CD</sub> en escenarios rápidos | A 200 GSa/s y 1000 km, R ≈ 5450 > 2048; a 120 GSa/s, N<sub>CD</sub> = 2048 alcanza solo 1043,9 km (2000 km pediría N = 4096) | N<sub>CD</sub> ∈ {512, 2048} (decisión 30); `cd_N` falla explícitamente si R > N<sub>CD</sub> | aceptado (límite conocido) |
+| Criterio de la decisión 27 con N = 2048 | Con N mucho mayor que R el error del método baja mucho; 1/10 de él puede quedar por debajo de lo que permiten el ADC y el DAC de 14 bits | Criterios absolutos (decisión 27, B5.2): NRMSE total < 1e-2, objetivo 1e-3 (a confirmar con el equipo) y error interno ≤ ½ del error de cuantizar la entrada a 14 bits | cerrada |
+| 1,2 sps en `Scenario` | La tasa del proyecto es 1,2 sps y `Scenario` solo admite sps ∈ {1, 2, 4, 8, 16}; el notebook 07 la arma a 6 sps y decimando por 5, fuera de `stimuli/` | Proponer que `Scenario` y `comm_signal` admitan sps racional (UP/DOWN); cambia funciones existentes, así que antes se acuerda | abierta: tarea B5.3, opcional, antes de C4 |
 | Ubicación del modelo bit a bit | La Ref. lo pone en el golden; el repo tiene `models/fixed_point/emulador-real/` | Utilidades y exploración en el golden, modelo bit a bit en `fixed_point` con HALCON | decidido (decisiones 14 y 28); falta acuerdo del equipo |
 | Formatos Qm.n | Convención definida (decisión 25); faltan los anchos | Arrancar de `ac_fixed<10, 2>` (Q2.8 de Jiang) | abierta |
 | Tolerancia de la Tabla 4 (SNR eq. de la ISI) | El PDF no da tolerancia | ±0,5 dB | abierta |
