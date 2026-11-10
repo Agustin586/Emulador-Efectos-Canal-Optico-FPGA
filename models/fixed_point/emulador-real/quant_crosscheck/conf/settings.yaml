@@ -1,0 +1,5 @@
+root:
+  enable_log: 0
+  fs_hz: 1
+  logger_buffer_size: 1000
+  n_iterations: 1

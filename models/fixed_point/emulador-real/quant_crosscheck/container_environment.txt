@@ -1,0 +1,42 @@
+# Entorno del contenedor hawk_workspace usado por quant_crosscheck (decisión 28)
+# Imagen construida el 2026-11-10 en la asus con: cd <halcon>/tutorials/lib/tools/docker && docker build -t hawk_workspace .
+# Imagen: sha256:d7fabc43ecb44a38e69377ffd30cd64adb248e1951616c7ae868079922fbcf2b
+# HALCON: tutorials/lib/core d3a04c3 (devel), lib/tools e5b7e02 (devel), lib/modules a662c3d (issue_1-5)
+# El dockerfile no fija las versiones de pip: si se reconstruye la imagen, comparar con este archivo.
+
+Python 3.8.10
+g++-13 (Ubuntu 13.1.0-8ubuntu1~20.04.2) 13.1.0
+cmake version 3.16.3
+PRETTY_NAME="Ubuntu 20.04.6 LTS"
+---
+certifi==2019.11.28
+chardet==3.0.4
+colorama==0.4.6
+contourpy==1.1.1
+cycler==0.12.1
+dbus-python==1.2.16
+fonttools==4.57.0
+idna==2.8
+importlib-resources==6.4.5
+kiwisolver==1.4.7
+matplotlib==3.7.5
+numpy==1.24.4
+ordered-set==4.1.0
+packaging==26.2
+pillow==10.4.0
+psutil==7.2.2
+Pygments==2.3.1
+PyGObject==3.36.0
+pylatex==1.4.2
+pyparsing==3.1.4
+python-apt==2.0.1+ubuntu0.20.4.1
+python-dateutil==3.0.0
+PyYAML==5.3.1
+requests==2.22.0
+requests-unixsocket==0.2.0
+scipy==1.10.1
+six==1.14.0
+tabulate==0.9.0
+tzdata==2026.6
+urllib3==1.25.8
+zipp==3.20.2
