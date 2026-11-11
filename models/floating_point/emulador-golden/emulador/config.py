@@ -29,6 +29,8 @@ QUIÉN USA CADA ELEMENTO (explicado en notebooks/00_escenario_y_convenciones.ipy
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from fractions import Fraction
+from numbers import Real
 from typing import ClassVar
 
 # --------------------------------------------------------------------------
@@ -60,31 +62,64 @@ def S_si(S_ps_nm2_km: float) -> float:
 class Scenario:
     """Escenario de simulación. Por defecto: 32 GBd, 2 sps -> fs = 64 GSa/s.
 
-    Rs         : tasa de símbolos [Bd], de 1 a 300 GBd.
-    sps        : muestras por símbolo: 1, 2, 4, 8 o 16 (16 solo para análisis fino).
+    Rs         : tasa de símbolos [Bd], de 1 a 480 GBd.
+    sps        : muestras por símbolo: entero 1, 2, 4, 8 o 16 (16 solo para análisis
+                 fino), o racional up/down entre 1 y 16 con down <= 16, como la
+                 tasa del proyecto, 1,2 = 6/5 (``Fraction(6, 5)``; un float como
+                 1.2 se convierte a esa fracción). Con sps racional la señal se
+                 arma a ``sps_up`` muestras por símbolo y se decima por
+                 ``sps_down`` (``stimuli.shape``).
     wavelength : longitud de onda de la portadora [m], banda C (1530 a 1565 nm).
     rolloff    : roll-off del RRC, de 0.05 a 0.5.
     """
 
     Rs: float = 32e9
-    sps: int = 2
+    sps: int | Fraction = 2
     wavelength: float = 1550e-9
     rolloff: float = 0.1
 
+    SPS_INT: ClassVar[tuple[int, ...]] = (1, 2, 4, 8, 16)
+    SPS_DOWN_MAX: ClassVar[int] = 16
+
     def __post_init__(self):
-        if not (1e9 <= self.Rs <= 300e9):
-            raise ValueError(f"Rs fuera de rango (1 a 300 GBd): {self.Rs!r}")
-        if self.sps not in (1, 2, 4, 8, 16):
-            raise ValueError(f"sps debe ser 1, 2, 4, 8 o 16: {self.sps!r}")
+        if not (1e9 <= self.Rs <= 480e9):
+            raise ValueError(f"Rs fuera de rango (1 a 480 GBd): {self.Rs!r}")
+        object.__setattr__(self, "sps", self._normalize_sps(self.sps))
         if not (1530e-9 <= self.wavelength <= 1565e-9):
             raise ValueError(f"wavelength fuera de la banda C (1530 a 1565 nm): {self.wavelength!r}")
         if not (0.05 <= self.rolloff <= 0.5):
             raise ValueError(f"rolloff fuera de rango (0.05 a 0.5): {self.rolloff!r}")
 
+    @classmethod
+    def _normalize_sps(cls, sps):
+        """int de SPS_INT, o Fraction no entera en (1, 16) con denominador <= 16."""
+        if isinstance(sps, bool) or not isinstance(sps, (Real, Fraction)):
+            raise ValueError(f"sps tiene que ser un número: {sps!r}")
+        f = Fraction(sps).limit_denominator(cls.SPS_DOWN_MAX)
+        if abs(float(f) - float(sps)) > 1e-12 * float(sps):
+            raise ValueError(f"sps tiene que ser racional con denominador <= {cls.SPS_DOWN_MAX}: {sps!r}")
+        if f.denominator == 1:
+            if int(f) not in cls.SPS_INT:
+                raise ValueError(f"sps entero debe ser 1, 2, 4, 8 o 16: {sps!r}")
+            return int(f)
+        if not (1 < f < 16):
+            raise ValueError(f"sps racional tiene que estar entre 1 y 16: {sps!r}")
+        return f
+
+    @property
+    def sps_up(self) -> int:
+        """Muestras por símbolo con que se arma la señal (numerador de sps)."""
+        return Fraction(self.sps).numerator
+
+    @property
+    def sps_down(self) -> int:
+        """Factor de decimación después de armarla (denominador de sps; 1 si es entero)."""
+        return Fraction(self.sps).denominator
+
     @property
     def fs(self) -> float:
         """Frecuencia de muestreo [Sa/s]."""
-        return self.Rs * self.sps
+        return float(self.Rs * self.sps)
 
     @property
     def Ts(self) -> float:
@@ -92,8 +127,16 @@ class Scenario:
         return 1.0 / self.fs
 
     def to_dict(self) -> dict:
-        """Parámetros y magnitudes derivadas, para los meta.json."""
-        return {**asdict(self), "fs": self.fs, "Ts": self.Ts}
+        """Parámetros y magnitudes derivadas, para los meta.json.
+
+        Con sps racional, "sps" va como float y se agregan "sps_up" y "sps_down"
+        (con sps entero el diccionario no cambia).
+        """
+        d = {**asdict(self), "fs": self.fs, "Ts": self.Ts}
+        if self.sps_down != 1:
+            d["sps"] = float(self.sps)
+            d["sps_up"], d["sps_down"] = self.sps_up, self.sps_down
+        return d
 
 
 # --------------------------------------------------------------------------

@@ -259,3 +259,48 @@ def test_recover_negative_delay():
     r = recover(x, sig)
     assert r.delay_samples(2) == -6
     assert 100 * r.evm < 0.5
+
+
+# --------------------------------------------------------------------------
+# B5.3: señal a sps racional (1,2 sps = armada a 6 y decimada por 5)
+# --------------------------------------------------------------------------
+from fractions import Fraction  # noqa: E402
+
+
+def test_shape_rational_sps_is_upsample_then_decimate():
+    esc = Scenario(Rs=60e9, sps=Fraction(6, 5))
+    sym = map_gray(prbs(15, 4 * 1000), "qam16")
+    x = shape(sym, esc)
+    up = np.zeros(1000 * 6, complex)
+    up[::6] = sym
+    ref = np.convolve(up, rrc_taps(esc.rolloff, 64, 6), mode="same")[::5]
+    ref = ref / np.sqrt(np.mean(np.abs(ref) ** 2))
+    assert x.shape == (1200,)
+    assert np.allclose(x, ref, rtol=0, atol=1e-14)
+    assert np.isclose(np.mean(np.abs(x) ** 2), 1.0, rtol=0, atol=1e-12)
+
+
+def test_shape_rational_sps_back_to_back():
+    """De vuelta a 6 sps (polifásica ×5), filtro adaptado y muestra por símbolo: EVM chico."""
+    from scipy.signal import resample_poly
+
+    esc = Scenario(Rs=60e9, sps=Fraction(6, 5))
+    sig = comm_signal(esc, n_symbols=2000)
+    y6 = resample_poly(sig.samples, 5, 1)[: 2000 * 6]
+    y = np.convolve(y6, rrc_taps(esc.rolloff, 64, 6), mode="same")[::6]
+    d = 64
+    assert 100 * evm_opt(y[d:-d], sig.symbols[d:-d]) < 1.0
+
+
+def test_comm_signal_meta_rational_sps():
+    esc = Scenario(Rs=480e9, sps=Fraction(6, 5))
+    m = comm_signal(esc, n_symbols=250).meta()
+    assert m["n_samples"] == 300
+    assert m["scenario"]["sps_up"] == 6
+    json.dumps(m)
+
+
+def test_recover_rejects_rational_sps():
+    sig = comm_signal(Scenario(Rs=60e9, sps=Fraction(6, 5)), n_symbols=200)
+    with pytest.raises(ValueError):
+        recover(sig.samples, sig)

@@ -215,7 +215,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
      - `D_si(D_ps_nm_km)`: 1 ps/(nm·km) = 10⁻¹² / (10⁻⁹ · 10³) = 10⁻⁶ s/m², así que 17 → 1,7·10⁻⁵;
      - `S_si(S_ps_nm2_km)`: 1 ps/(nm²·km) = 10⁻¹² / (10⁻¹⁸ · 10³) = 10³ s/m³, así que 0,057 → 57.
   3. **`@dataclass(frozen=True) class Scenario`** con `Rs=32e9`, `sps=2`, `wavelength=1550e-9` y `rolloff=0.1`, y las propiedades `fs = Rs·sps` y `Ts = 1/fs`.
-     - Validar en `__post_init__`: R<sub>s</sub> ∈ [1, 300] GBd; sps ∈ {1, 2, 4, 8, 16}; λ ∈ [1530, 1565] nm; roll-off ∈ [0,05, 0,5].
+     - Validar en `__post_init__`: R<sub>s</sub> ∈ [1, 480] GBd; sps ∈ {1, 2, 4, 8, 16} o racional up/down en (1, 16) con down ≤ 16 (B5.3); λ ∈ [1530, 1565] nm; roll-off ∈ [0,05, 0,5].
      - Agregar `to_dict()` para guardarlo en los `meta.json`.
   4. **`@dataclass(frozen=True) class HardwareParams`** con `P=1`, `f_clk=None` y `N_max=2048` (desde B5.2, `N_CD=2048`, decisión 30), y `provisional: bool = True`. Queda separado del escenario porque describe la implementación, no el canal (Ref. B.8).
   5. Docstring de módulo con la tabla de convenciones de la Ref. §3: SI, `fftfreq`, signo positivo y retardos.
@@ -668,6 +668,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
   1. **B5.1:** registrar la decisión 30 en §1 y ajustar las decisiones 5 y 7.
   2. **B5.2 (hecho):** `HardwareParams.N_CD` = 2048, solo {512, 2048}, sin `N_max`; `cd_N(R, N_CD)` devuelve N<sub>CD</sub> si R ≤ N<sub>CD</sub> y `ValueError` si no (N no se elige según R); el bloque `ChromaticDispersion` solo acepta N ∈ {512, 2048}; `cd_summary` pierde la clave `"N"`. Notebooks 00, 03, 04, 07 y `entregas/07` corridos con N<sub>CD</sub> = 2048. Decisión 27 reemplazada por criterios absolutos.
   3. **B5.3 (opcional, antes de C4):** que `Scenario` y `comm_signal` admitan sps racional (UP/DOWN), para generar la señal de 1,2 sps del proyecto dentro de `stimuli/` (hoy el notebook 07 la arma a 6 sps y decimando por 5). Cambia funciones existentes: proponer antes. No frena C2 ni C3.
+     **Hecho (2026-11-10):** `Scenario.sps` acepta enteros {1, 2, 4, 8, 16} o racionales up/down en (1, 16) con down ≤ 16 (1.2 → `Fraction(6, 5)`), con `sps_up` y `sps_down`; R<sub>s</sub> hasta 480 GBd; `shape`/`comm_signal` arman a `sps_up` y deciman por `sps_down`; `to_dict` agrega `sps_up`/`sps_down` solo con sps racional; `rx` rechaza sps racional. Sin tocar archivos compartidos. El notebook `05_cuantizacion` ya genera la señal con `comm_signal`.
 - **Tests (B5.2):** `cd_N` en los bordes (R siempre impar): con N<sub>CD</sub> = 512, R = 511 pasa y 513 falla; con 2048, 2047 pasa y 2049 falla; N<sub>CD</sub> = 1024 falla. Tabla a 64 GSa/s (B1.3 reescrita) y `HardwareParams()` con los valores decididos.
 - **Errores a evitar:** cambiar `cd_N` sin actualizar los tests de tabla de B1.3 ni los notebooks que dependen del N automático (03, 04 y 07).
 - **Verificar:** `pytest`.
@@ -840,7 +841,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 *Hito 5 · Cierre en flotante de la CD* (último paso en punto flotante; después sigue el punto fijo)
 - [x] B5.1 · Registrar la decisión del equipo: N ∈ {512, 2048}, N<sub>max</sub> = 2048 (decisión 30; ajusta 5 y 7)
 - [x] B5.2 · Aplicar la decisión 30 (N<sub>CD</sub> de síntesis) en `cd_N`, `HardwareParams` y el bloque + tests; notebooks 00, 03, 04, 07 y `entregas/07`; decisión 27 con criterios absolutos
-- [ ] B5.3 · (opcional, antes de C4) `Scenario` y `comm_signal` con sps racional (1,2 sps)
+- [x] B5.3 · (opcional, antes de C4) `Scenario` y `comm_signal` con sps racional (1,2 sps)
 
 **Cuantización y exportación**
 - [x] C1.1 · Confirmar RFSoC, P, f<sub>clk</sub> y N<sub>max</sub>; actualizar `HardwareParams` y la fila 7 de §1 (dispositivo sin confirmar: queda parametrizado, decisión 7)
@@ -889,7 +890,8 @@ Todo lo que sigue toca código o configuración compartidos: requiere acuerdo o 
 | Modelo de RFSoC, P, f<sub>clk</sub>, N<sub>CD</sub> | Bloqueaba C3 (réplica radix-2²) y la exportación bit a bit | ZCU208 (decisión 7), N<sub>CD</sub> ∈ {512, 2048} (decisión 30) y arquitectura de la FFT decidida (decisión 31); queda abierta la opción A o B (P y f<sub>clk</sub>), que no cambia los bits | mitigado |
 | Alcance de N<sub>CD</sub> en escenarios rápidos | A 200 GSa/s y 1000 km, R ≈ 5450 > 2048; a 120 GSa/s, N<sub>CD</sub> = 2048 alcanza solo 1043,9 km (2000 km pediría N = 4096) | N<sub>CD</sub> ∈ {512, 2048} (decisión 30); `cd_N` falla explícitamente si R > N<sub>CD</sub> | aceptado (límite conocido) |
 | Criterio de la decisión 27 con N = 2048 | Con N mucho mayor que R el error del método baja mucho; 1/10 de él puede quedar por debajo de lo que permiten el ADC y el DAC de 14 bits | Criterios absolutos (decisión 27, B5.2): NRMSE total < 1e-2, objetivo 1e-3 (a confirmar con el equipo) y error interno ≤ ½ del error de cuantizar la entrada a 14 bits | cerrada |
-| 1,2 sps en `Scenario` | La tasa del proyecto es 1,2 sps y `Scenario` solo admite sps ∈ {1, 2, 4, 8, 16}; el notebook 07 la arma a 6 sps y decimando por 5, fuera de `stimuli/` | Proponer que `Scenario` y `comm_signal` admitan sps racional (UP/DOWN); cambia funciones existentes, así que antes se acuerda | abierta: tarea B5.3, opcional, antes de C4 |
+| 1,2 sps en `Scenario` | La tasa del proyecto es 1,2 sps y `Scenario` solo admite sps ∈ {1, 2, 4, 8, 16}; el notebook 07 la arma a 6 sps y decimando por 5, fuera de `stimuli/` | Proponer que `Scenario` y `comm_signal` admitan sps racional (UP/DOWN); cambia funciones existentes, así que antes se acuerda | cerrada: B5.3 hecha (2026-11-10) |
+| Receptor a 1,2 sps | `rx.matched_filter` y `rx.recover` solo admiten sps entero; con sps racional lanzan `ValueError` (B5.3). El receptor de 1,2 sps (interpolar a 6 sps, filtro adaptado, muestra por símbolo) sigue en los notebooks 07 | Llevarlo a `rx.py` cuando haga falta; no lo necesita C4 | abierta, baja prioridad |
 | Pulso de `transmit()` en los notebooks 07 | `07_cd_parametros_cdc` y `entregas/07_avance_cd_punto_diseno` arman la señal con coseno realzado (RC). La señal que ve el canal tiene que ser RRC; el RC es la respuesta total Tx + Rx | Revisar después (no se cambia por ahora). El notebook `05_cuantizacion` (C3.2) ya usa RRC β = 0,1 en su `transmit()` local | abierta |
 | Ubicación del modelo bit a bit | La Ref. lo pone en el golden; el repo tiene `models/fixed_point/emulador-real/` | Utilidades y exploración en el golden, modelo bit a bit en `fixed_point` con HALCON | propuesta (decisiones 14 y 28), pendiente de acuerdo del equipo: Wanda lo plantea en la próxima reunión; afecta a C4 |
 | Formatos `ac_fixed<W, I>` | Convención definida (decisión 25) | Anchos de partida decididos (decisión 32; se descarta el Q2.8 de Jiang); C3 los ajusta | cerrada (punto de partida) |
