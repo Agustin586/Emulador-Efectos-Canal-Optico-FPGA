@@ -28,7 +28,12 @@ def matched_filter(x: np.ndarray, esc: Scenario, span: int = 64) -> np.ndarray:
 
     El RRC es simétrico y de largo impar: no agrega retardo. span por defecto =
     64 símbolos (GUIA_ISI_CD.md §1, decisión 15).
+
+    Solo sps entero: con sps racional (B5.3) el receptor tiene que volver antes a
+    ``esc.sps_up`` muestras por símbolo, y lanza ``ValueError``.
     """
+    if esc.sps_down != 1:
+        raise ValueError(f"rx: sps racional ({esc.sps}) no soportado; interpolar antes a {esc.sps_up} sps")
     return np.convolve(x, rrc_taps(esc.rolloff, span, esc.sps), mode="same")
 
 

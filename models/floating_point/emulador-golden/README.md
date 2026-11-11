@@ -9,7 +9,8 @@ Modelos en **punto flotante (Python)** de cada deterioro del emulador de efectos
 ```
 emulador/
   common.py         contrato Block, señal de prueba (PAM4/QAM16) y EVM
-  config.py         Scenario (Rs, sps, λ, roll-off -> fs) y HardwareParams; conversión de unidades
+  config.py         Scenario (Rs hasta 480 GBd, sps entero o racional como 1,2 = 6/5, λ, roll-off -> fs)
+                    y HardwareParams (N_CD ∈ {512, 2048}, parámetro de síntesis); conversión de unidades
   metrics.py        NRMSE, EVM con ganancia óptima, retardo de grupo, ancho rms, SNR equivalente de la ISI
   stimuli/          PRBS (ITU-T O.150), mapeo Gray PAM4/QAM16, conformación RRC, señales de prueba
   rx.py             receptor mínimo: filtro adaptado, fase de muestreo y retardo óptimos, EVM
@@ -75,6 +76,7 @@ Cada notebook valida un bloque contra la teoría y el informe de fundamentos (`d
 | `03_cd_modelo_fisico` | Función de transferencia de la CD, largo del chirp, pulso gaussiano y efecto sobre QAM16 |
 | `04_cd_overlap_save` | Overlap-save, alcance de cada tamaño de bloque, residuo de β₃ y dimensionamiento del hardware |
 | `07_cd_parametros_cdc` | CD con los parámetros del grupo del compensador (60 GBd, 72 GSa/s, 200 km, ventana de 384) |
+| `entregas/07_avance_cd_punto_diseno` | Versión para entregar del 07: cadena Tx 16-QAM → emulador → Rx sin compensar, a 32/60/100 GBd y 1,2 sps |
 
 ## Ciclo de trabajo por bloque (por ahora, dos pasos)
 
@@ -100,4 +102,6 @@ Vale hasta que se defina la interfaz común con el grupo:
 - **Interfaz de señal:** forma de los datos, muestras por símbolo y polarizaciones.
 - **Definición de SNR:** por muestra o por símbolo (Es/N0). Afecta al bloque AWGN.
 - **Signo de la CD (definido en el golden model):** convención positiva, `H_CD(f) = exp(+j·π·D·λ²·z·f²/c)` (con β₃ opcional), sin el factor 1/2 de la guía original. **El compensador (CDC) tiene que usar el conjugado, `H*`.**
+- **Tamaño de bloque de la CD (N_CD):** es un parámetro de síntesis, con dos versiones del hardware: N_CD = 512 (FFT de 1024) y 2048 (FFT de 4096, por defecto). El bloque rechaza con `ValueError` un escenario cuyo chirp no entra (R > N_CD).
+- **Tasa del proyecto, 1,2 muestras por símbolo:** `Scenario(sps=Fraction(6, 5))`; `comm_signal` arma la señal a 6 sps y la decima por 5. El receptor de `rx.py` solo admite sps entero.
 - **Retardo de los bloques:** ISI y CD exponen `delay_samples`, `coefficients()` y `process_hw()` (salida cruda, como el hardware); `process()` devuelve la salida alineada. Se propone sumar estas tres piezas a `Block` con valores neutros.

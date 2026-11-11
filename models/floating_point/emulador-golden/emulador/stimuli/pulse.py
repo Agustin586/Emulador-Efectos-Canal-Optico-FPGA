@@ -23,10 +23,14 @@ from .prbs import prbs
 def shape(symbols: np.ndarray, esc: Scenario, span: int = 64) -> np.ndarray:
     """Sobremuestrea los símbolos a ``esc.sps`` y los filtra con un RRC.
 
-    Inserta sps - 1 ceros entre símbolos y convoluciona con
-    ``rrc_taps(esc.rolloff, span, esc.sps)`` en modo "same", como ``gen_signal``.
-    El RRC tiene largo impar (span·sps + 1) y es simétrico, así que el símbolo k
-    queda centrado en la muestra k·sps: no agrega retardo.
+    Inserta up - 1 ceros entre símbolos (up = ``esc.sps_up``) y convoluciona con
+    ``rrc_taps(esc.rolloff, span, up)`` en modo "same", como ``gen_signal``.
+    El RRC tiene largo impar (span·up + 1) y es simétrico, así que el símbolo k
+    queda centrado en la muestra k·up: no agrega retardo.
+
+    Con sps racional (B5.3) después se decima por ``esc.sps_down``: 1,2 sps se arma
+    a 6 y se toma 1 muestra de cada 5, como los notebooks 07 (sin aliasing si
+    (1 + roll-off)·Rs/2 < fs/2). El símbolo k queda en el instante k·down/up.
 
     La salida se normaliza a potencia media 1 (la ISI supone potencia 1).
 
@@ -34,9 +38,10 @@ def shape(symbols: np.ndarray, esc: Scenario, span: int = 64) -> np.ndarray:
            back-to-back es 0.58 % con 32 y 0.12 % con 64 (GUIA §1, decisión 15).
     """
     symbols = np.asarray(symbols, dtype=complex)
-    up = np.zeros(len(symbols) * esc.sps, dtype=complex)
-    up[:: esc.sps] = symbols
-    x = np.convolve(up, rrc_taps(esc.rolloff, span, esc.sps), mode="same")
+    k_up, k_down = esc.sps_up, esc.sps_down
+    up = np.zeros(len(symbols) * k_up, dtype=complex)
+    up[::k_up] = symbols
+    x = np.convolve(up, rrc_taps(esc.rolloff, span, k_up), mode="same")[::k_down]
     return x / np.sqrt(np.mean(np.abs(x) ** 2))
 
 

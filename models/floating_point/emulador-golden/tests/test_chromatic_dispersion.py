@@ -146,31 +146,44 @@ def test_cd_R_zero_length_and_sign_of_D():
 
 
 @pytest.mark.parametrize(
-    "z_km, N",
-    [(0, 128), (10, 128), (100, 128), (200, 128), (500, 512), (1000, 1024), (2000, 2048)],
+    "N_CD, R, ok",
+    [(512, 1, True), (512, 511, True), (512, 513, False), (2048, 513, True), (2048, 2047, True), (2048, 2049, False)],
 )
-def test_cd_N_table(z_km, N):
-    """Decisión 5: N = max(128, menor potencia de 2 >= R)."""
-    assert cd_N(FS, D, LAM, z_km * KM) == N
+def test_cd_N_borders(N_CD, R, ok):
+    """Decisión 30: cd_N devuelve N_CD si R <= N_CD (R siempre impar); si no, ValueError."""
+    if ok:
+        assert cd_N(R, N_CD) == N_CD
+    else:
+        with pytest.raises(ValueError):
+            cd_N(R, N_CD)
 
 
-def test_cd_N_default_N_max_is_hardware_params():
-    assert cd_N(FS, D, LAM, 2000 * KM) <= HardwareParams().N_max
-
-
-def test_cd_N_exceeds_N_max():
+@pytest.mark.parametrize("N_CD", [1024, 128, 4096, 1000])
+def test_cd_N_rejects_invalid_N_CD(N_CD):
     with pytest.raises(ValueError):
-        cd_N(FS, D, LAM, 2000 * KM, N_max=1024)
+        cd_N(1, N_CD)
 
 
-def test_cd_N_custom_N_min():
-    assert cd_N(FS, D, LAM, 10 * KM, N_min=16) == 16
-    assert cd_N(FS, D, LAM, 100 * KM, N_min=16) == 64
+@pytest.mark.parametrize(
+    "z_km, N_CD, ok",
+    [(0, 512, True), (100, 512, True), (500, 512, True), (917, 512, True), (918, 512, False),
+     (1000, 2048, True), (2000, 2048, True), (3670, 2048, True), (3671, 2048, False)],
+)
+def test_cd_N_table(z_km, N_CD, ok):
+    """Decisión 30 a 64 GSa/s (SSMF): N = 512 alcanza 917,5 km y N = 2048, 3670,1 km."""
+    R = cd_R(FS, D, LAM, z_km * KM)
+    if ok:
+        assert cd_N(R, N_CD) == N_CD
+    else:
+        with pytest.raises(ValueError):
+            cd_N(R, N_CD)
 
 
-# --------------------------------------------------------------------------
-# physics: resumen (B1.4)
-# --------------------------------------------------------------------------
+def test_cd_N_default_is_hardware_params():
+    assert cd_N(1) == HardwareParams().N_CD == 2048
+    assert cd_N(cd_R(FS, D, LAM, 100 * KM)) == 2048  # N no depende de R
+
+
 def test_cd_summary_table_15():
     """PDF Tabla 15: SSMF, 100 km, 64 GSa/s (32 GBd, 2 sps)."""
     s = cd_summary(Scenario(), D, 100 * KM, S)
@@ -178,7 +191,7 @@ def test_cd_summary_table_15():
     assert s["beta3_ps3_km"] == pytest.approx(0.13, rel=0.03)
     assert s["gd_slope_ps_GHz"] == pytest.approx(-13.6, rel=0.01)
     assert s["R"] == 55
-    assert s["N"] == 128
+    assert s["N_fits_hw"] is True
     assert s["L_D_km"] == pytest.approx(45, rel=0.01)
     assert s["Dz_ps_nm"] == pytest.approx(1700)
 
@@ -186,15 +199,15 @@ def test_cd_summary_table_15():
 def test_cd_summary_S0_and_worst_case():
     s = cd_summary(Scenario(), D, 100 * KM)
     assert s["beta3_ps3_km"] == 0.0
-    # PDF Tabla 14, peor caso: D = 23 ps/(nm·km), 2000 km, 64 GSa/s -> R = 1509, N = 2048
+    # PDF Tabla 14, peor caso: D = 23 ps/(nm·km), 2000 km, 64 GSa/s -> R = 1509 <= N_CD = 2048
     s = cd_summary(Scenario(), D_si(23.0), 2000 * KM)
-    assert (s["R"], s["N"]) == (1509, 2048)
+    assert s["R"] == 1509 and "N" not in s
     assert s["N_fits_hw"] is True
 
 
 def test_cd_summary_N_beyond_hw():
     s = cd_summary(Scenario(), D, 4000 * KM)
-    assert s["N"] == 4096
+    assert s["R"] > 2048
     assert s["N_fits_hw"] is False
 
 
@@ -304,7 +317,7 @@ def _noise(n, seed=0, shape=()):
 
 def _ols_vs_reference(x, z, N=None):
     """NRMSE del overlap-save contra la referencia, descontando el retardo N/2."""
-    N = N if N is not None else cd_N(FS, D, LAM, z)
+    N = N if N is not None else cd_N(cd_R(FS, D, LAM, z))
     y = cd_overlap_save(x, cd_hbar(N, FS, D, LAM, z, S=S))
     r = cd_reference(x, FS, D, LAM, z, S=S)
     m = x.size - 2 * N
@@ -313,20 +326,21 @@ def _ols_vs_reference(x, z, N=None):
 
 @pytest.mark.parametrize("z_km", [100, 500, 1000, 2000])
 def test_overlap_save_against_reference_qam(z_km):
-    """Decisión 21: con QAM16 y N = cd_N, NRMSE < 1e-2 (medido 1,6e-3 … 2e-4)."""
+    """Decisión 21: con QAM16 y N = cd_N, NRMSE < 1e-2 (con N = 2048: 1,1e-5 … 2,3e-4)."""
     x = _qam(10_000)
     assert _ols_vs_reference(x, z_km * KM) < 1e-2
 
 
 def test_overlap_save_worst_point_of_N128():
-    """229 km es el último z con N = 128 (R = 127): NRMSE 9,8e-3 con QAM16."""
-    assert cd_N(FS, D, LAM, 229 * KM) == 128
-    assert _ols_vs_reference(_qam(10_000), 229 * KM) < 1.5e-2
+    """Método con N = 128 (no es un N del hardware): 229 km es el último z con R <= 128
+    (R = 127), NRMSE 9,8e-3 con QAM16."""
+    assert cd_R(FS, D, LAM, 229 * KM) == 127
+    assert _ols_vs_reference(_qam(10_000), 229 * KM, N=128) < 1.5e-2
 
 
 @pytest.mark.parametrize("z_km", [100, 500, 1000, 2000])
 def test_overlap_save_against_reference_noise(z_km):
-    """Decisión 21: ruido blanco (toda la banda, peor caso), NRMSE < 2e-2 (medido 0,7e-2 … 1,4e-2).
+    """Decisión 21: ruido blanco (toda la banda, peor caso), NRMSE < 2e-2 (con N = 2048: 4,8e-4 … 9,7e-3).
 
     Las colas del chirp que no entran en N muestras son las de frecuencia
     instantánea cerca de Nyquist: la QAM16 casi no tiene energía ahí, el ruido sí.
@@ -384,13 +398,13 @@ def test_block_default_is_identity():
     """length_km = 0: H̄ es un retardo puro de N/2 y process lo descuenta."""
     x = _qam()
     blk = ChromaticDispersion()
-    assert blk.N == 128 and blk.delay_samples == 64
-    assert nrmse(blk(x), x) < 1e-14
+    assert blk.N == 2048 and blk.delay_samples == 1024
+    assert nrmse(blk(x), x) < 1e-13  # redondeo de la FFT de L = 4096 (medido 5e-14)
 
 
 def test_block_hbar_matches_functions():
     blk = ChromaticDispersion(length_km=300.0, S_ps_nm2_km=0.057)
-    N = cd_N(FS, D, LAM, 300 * KM)
+    N = cd_N(cd_R(FS, D, LAM, 300 * KM))
     c = blk.coefficients()
     assert c["N"] == N == blk.N
     assert np.max(np.abs(c["Hbar"] - cd_hbar(N, FS, D, LAM, 300 * KM, S=S))) < TOL
@@ -401,7 +415,7 @@ def test_block_S0_hbar_identical_to_beta2_only():
     a = ChromaticDispersion(length_km=100.0).coefficients()["Hbar"]
     b = ChromaticDispersion(length_km=100.0, S_ps_nm2_km=0.0).coefficients()["Hbar"]
     assert np.array_equal(a, b)
-    assert np.array_equal(a, cd_hbar(128, FS, D, LAM, 100 * KM))
+    assert np.array_equal(a, cd_hbar(2048, FS, D, LAM, 100 * KM))
 
 
 @pytest.mark.parametrize("z_km", [100, 500])
@@ -438,10 +452,13 @@ def test_block_two_polarizations():
 
 def test_block_explicit_N_and_validation():
     assert ChromaticDispersion(length_km=100.0, N=512).N == 512
-    for bad in (127, 0, 64):  # impar, cero, menor que R = 111 a 200 km
+    assert ChromaticDispersion(length_km=100.0).N == 2048  # N_CD por defecto, no depende de R
+    for bad in (127, 0, 64, 128, 1024):  # solo N_CD ∈ {512, 2048} (decisión 30)
         with pytest.raises(ValueError):
             ChromaticDispersion(length_km=200.0, N=bad)
-    with pytest.raises(ValueError):  # cd_N supera N_max = 2048
+    with pytest.raises(ValueError):  # R = 557 > N_CD = 512 a 1000 km
+        ChromaticDispersion(length_km=1000.0, N=512)
+    with pytest.raises(ValueError):  # R > N_CD = 2048 a 4000 km
         ChromaticDispersion(length_km=4000.0)
 
 
