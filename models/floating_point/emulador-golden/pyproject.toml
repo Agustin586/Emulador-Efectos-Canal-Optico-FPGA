@@ -11,9 +11,13 @@ dependencies = ["numpy", "scipy", "matplotlib"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
+notebooks = ["jupyterlab>=4", "ipykernel", "jupytext>=1.16", "nbstripout", "nbconvert"]
 
 [tool.setuptools.packages.find]
 include = ["emulador*"]
+
+[tool.setuptools.package-data]
+emulador = ["*.mplstyle"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
