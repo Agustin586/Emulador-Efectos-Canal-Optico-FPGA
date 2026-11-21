@@ -47,7 +47,14 @@ def eye(ax, x: np.ndarray, sps: int, n_traces: int = 500, offset: int = 0, title
              el instante de muestreo k·sps, usar offset = sps // 2 (el ojo queda
              abierto en t = 0,5 y 1,5 símbolos). Descartar los transitorios de
              los bordes con un offset múltiplo de sps.
+
+    Solo sps entero (B5.4): con sps racional (por ejemplo Fraction(6, 5)) lanza
+    ``ValueError``; interpolar antes a ``esc.sps_num`` muestras por símbolo
+    (``scipy.signal.resample_poly(x, esc.sps_den, 1)``) y pasar ese valor.
     """
+    if int(sps) != sps:
+        raise ValueError(f"eye: solo sps entero; con sps racional {sps} interpolar antes a sps_num muestras por símbolo")
+    sps = int(sps)
     x = np.asarray(x).real
     win = 2 * sps + 1
     starts = offset + sps * np.arange(n_traces)

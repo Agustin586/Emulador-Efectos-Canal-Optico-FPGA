@@ -63,12 +63,15 @@ class Scenario:
     """Escenario de simulación. Por defecto: 32 GBd, 2 sps -> fs = 64 GSa/s.
 
     Rs         : tasa de símbolos [Bd], de 1 a 480 GBd.
-    sps        : muestras por símbolo: entero 1, 2, 4, 8 o 16 (16 solo para análisis
-                 fino), o racional up/down entre 1 y 16 con down <= 16, como la
-                 tasa del proyecto, 1,2 = 6/5 (``Fraction(6, 5)``; un float como
-                 1.2 se convierte a esa fracción). Con sps racional la señal se
-                 arma a ``sps_up`` muestras por símbolo y se decima por
-                 ``sps_down`` (``stimuli.shape``).
+    sps        : muestras por símbolo, racional entre 1 y 16 (inclusive) con
+                 denominador <= 16 (B5.4). Los enteros quedan como int (1 a 16;
+                 16 solo para análisis fino) y los no enteros como Fraction, como
+                 la tasa del proyecto, 1,2 = 6/5 (``Fraction(6, 5)``; un float
+                 como 1.2 se convierte a esa fracción con
+                 ``limit_denominator(16)``). Con sps = p/q la señal se arma a
+                 p = ``sps_num`` muestras por símbolo y se decima por
+                 q = ``sps_den`` (``stimuli.shape``). Las cantidades en muestras
+                 (retardos de la ISI, d, R y N de la CD) son siempre a fs.
     wavelength : longitud de onda de la portadora [m], banda C (1530 a 1565 nm).
     rolloff    : roll-off del RRC, de 0.05 a 0.5.
     """
@@ -78,7 +81,7 @@ class Scenario:
     wavelength: float = 1550e-9
     rolloff: float = 0.1
 
-    SPS_INT: ClassVar[tuple[int, ...]] = (1, 2, 4, 8, 16)
+    SPS_MAX: ClassVar[int] = 16
     SPS_DOWN_MAX: ClassVar[int] = 16
 
     def __post_init__(self):
@@ -92,19 +95,15 @@ class Scenario:
 
     @classmethod
     def _normalize_sps(cls, sps):
-        """int de SPS_INT, o Fraction no entera en (1, 16) con denominador <= 16."""
+        """int de 1 a 16, o Fraction no entera en (1, 16) con denominador <= 16."""
         if isinstance(sps, bool) or not isinstance(sps, (Real, Fraction)):
             raise ValueError(f"sps tiene que ser un número: {sps!r}")
         f = Fraction(sps).limit_denominator(cls.SPS_DOWN_MAX)
         if abs(float(f) - float(sps)) > 1e-12 * float(sps):
             raise ValueError(f"sps tiene que ser racional con denominador <= {cls.SPS_DOWN_MAX}: {sps!r}")
-        if f.denominator == 1:
-            if int(f) not in cls.SPS_INT:
-                raise ValueError(f"sps entero debe ser 1, 2, 4, 8 o 16: {sps!r}")
-            return int(f)
-        if not (1 < f < 16):
-            raise ValueError(f"sps racional tiene que estar entre 1 y 16: {sps!r}")
-        return f
+        if not (1 <= f <= cls.SPS_MAX):
+            raise ValueError(f"sps tiene que estar entre 1 y {cls.SPS_MAX}: {sps!r}")
+        return int(f) if f.denominator == 1 else f
 
     @property
     def sps_up(self) -> int:
@@ -117,9 +116,19 @@ class Scenario:
         return Fraction(self.sps).denominator
 
     @property
+    def sps_num(self) -> int:
+        """Alias de ``sps_up``: numerador p de sps = p/q."""
+        return self.sps_up
+
+    @property
+    def sps_den(self) -> int:
+        """Alias de ``sps_down``: denominador q de sps = p/q."""
+        return self.sps_down
+
+    @property
     def fs(self) -> float:
-        """Frecuencia de muestreo [Sa/s]."""
-        return float(self.Rs * self.sps)
+        """Frecuencia de muestreo [Sa/s], exacta: float(Fraction(Rs)·sps)."""
+        return float(Fraction(self.Rs) * Fraction(self.sps))
 
     @property
     def Ts(self) -> float:

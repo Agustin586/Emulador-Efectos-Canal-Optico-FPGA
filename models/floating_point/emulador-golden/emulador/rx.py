@@ -9,13 +9,20 @@ constelación) refleja el receptor y no el canal: más de 10 dB de diferencia
 
 Para analizar el instante óptimo con más resolución que media muestra, generar
 la señal con ``Scenario(sps=16)``: los perfiles escalan con B/Rs.
+
+Con sps racional p/q (B5.4, por ejemplo 1,2 = 6/5) el receptor primero vuelve a
+p muestras por símbolo con ``scipy.signal.resample_poly(x, q, 1)`` (interpolación
+polifásica ×q, que compensa su propio retardo) y desde ahí sigue igual que con
+sps entero p. No se usa "la muestra más cercana": a 1,2 sps el instante de
+muestreo quedaría hasta ±0,42 símbolo lejos del óptimo. Con sps entero no se
+remuestrea y el resultado es bit a bit el de antes.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 import numpy as np
-from scipy.signal import correlate, correlation_lags
+from scipy.signal import correlate, correlation_lags, resample_poly
 
 from .common import rrc_taps
 from .config import Scenario
@@ -29,12 +36,14 @@ def matched_filter(x: np.ndarray, esc: Scenario, span: int = 64) -> np.ndarray:
     El RRC es simétrico y de largo impar: no agrega retardo. span por defecto =
     64 símbolos (GUIA_ISI_CD.md §1, decisión 15).
 
-    Solo sps entero: con sps racional (B5.3) el receptor tiene que volver antes a
-    ``esc.sps_up`` muestras por símbolo, y lanza ``ValueError``.
+    Con sps = p/q racional (B5.4) primero interpola ×q con ``resample_poly`` y
+    la salida queda a p = ``esc.sps_num`` muestras por símbolo (largo len(x)·q).
+    Con sps entero la salida tiene el largo de x, a ``esc.sps`` muestras por símbolo.
     """
-    if esc.sps_down != 1:
-        raise ValueError(f"rx: sps racional ({esc.sps}) no soportado; interpolar antes a {esc.sps_up} sps")
-    return np.convolve(x, rrc_taps(esc.rolloff, span, esc.sps), mode="same")
+    x = np.asarray(x)
+    if esc.sps_den != 1:
+        x = resample_poly(x, esc.sps_den, 1)
+    return np.convolve(x, rrc_taps(esc.rolloff, span, esc.sps_num), mode="same")
 
 
 @dataclass
@@ -44,7 +53,8 @@ class RxResult:
     symbols : símbolos recibidos, alineados con ``ref`` y corregidos con la
               ganancia compleja óptima (listos para graficar la constelación).
     ref     : símbolos transmitidos correspondientes.
-    phase   : fase de muestreo elegida, en muestras (0 … sps-1).
+    phase   : fase de muestreo elegida, en muestras a ``sps_num`` sps (0 … sps_num-1;
+              con sps entero, sps_num = sps).
     delay   : retardo entero, en símbolos.
     evm     : ``evm_opt`` (fracción, no %) sobre ``symbols``/``ref``.
     """
@@ -56,7 +66,10 @@ class RxResult:
     evm: float
 
     def delay_samples(self, sps: int) -> int:
-        """Retardo total en muestras: delay·sps + phase."""
+        """Retardo total en muestras a ``sps`` entero: delay·sps + phase.
+
+        Con sps racional p/q, pasar p (la grilla interpolada de ``recover``).
+        """
         return self.delay * sps + self.phase
 
 
@@ -80,9 +93,10 @@ def _best_delay(s: np.ndarray, ref: np.ndarray) -> int:
 def recover(x: np.ndarray, sig: CommSignal, search: bool = True) -> RxResult:
     """Filtro adaptado, muestreo en el instante óptimo y medición de EVM.
 
-    x      : señal recibida (n,), con sig.scenario.sps muestras por símbolo.
+    x      : señal recibida (n,), con sig.scenario.sps muestras por símbolo
+             (entero o racional; ver ``matched_filter``).
     sig    : la señal transmitida (da el escenario, el span y los símbolos).
-    search : True -> para cada fase 0 … sps-1 se estima el retardo entero por
+    search : True -> para cada fase 0 … p-1 (p = sps_num) se estima el retardo entero por
              correlación cruzada con ``sig.symbols`` y se elige la combinación
              de menor ``evm_opt``. False -> fase 0 y retardo 0.
 
@@ -91,10 +105,11 @@ def recover(x: np.ndarray, sig: CommSignal, search: bool = True) -> RxResult:
     """
     esc = sig.scenario
     y = matched_filter(np.asarray(x), esc, sig.span)
-    candidates = range(esc.sps) if search else (0,)
+    p = esc.sps_num
+    candidates = range(p) if search else (0,)
     best = None
     for phase in candidates:
-        s = y[phase :: esc.sps]
+        s = y[phase::p]
         delay = _best_delay(s, sig.symbols) if search else 0
         rx, ref = _align(s, sig.symbols, delay, sig.span)
         e = evm_opt(rx, ref)

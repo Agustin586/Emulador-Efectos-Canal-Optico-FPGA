@@ -300,7 +300,57 @@ def test_comm_signal_meta_rational_sps():
     json.dumps(m)
 
 
-def test_recover_rejects_rational_sps():
-    sig = comm_signal(Scenario(Rs=60e9, sps=Fraction(6, 5)), n_symbols=200)
-    with pytest.raises(ValueError):
-        recover(sig.samples, sig)
+# --------------------------------------------------------------------------
+# B5.4: receptor con sps racional, señal común a 1,2 sps y sps entero sin cambios
+# --------------------------------------------------------------------------
+def test_recover_rational_sps_back_to_back():
+    """resample_poly ×5 -> 6 sps -> filtro adaptado: piso de EVM medido 0,138 %
+    con span 64 (0,116 % a 2 sps); criterio back-to-back de la decisión 15: < 0,5 %."""
+    sig = comm_signal(Scenario(Rs=60e9, sps=Fraction(6, 5)), n_symbols=8192)
+    r = recover(sig.samples, sig)
+    assert (r.phase, r.delay) == (0, 0)
+    assert 100 * r.evm < 0.5
+
+
+def test_matched_filter_rational_sps_length():
+    from emulador.rx import matched_filter
+
+    esc = Scenario(Rs=60e9, sps=Fraction(6, 5))
+    assert matched_filter(np.zeros(1200, complex), esc).shape == (6000,)
+
+
+def test_eye_and_symbol_rate_response_reject_rational_sps():
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    from emulador import plots
+    from emulador.metrics import symbol_rate_response
+
+    fig, ax = plt.subplots()
+    with pytest.raises(ValueError, match="solo sps entero"):
+        plots.eye(ax, np.zeros(1000), Fraction(6, 5))
+    plt.close(fig)
+    with pytest.raises(ValueError, match="solo sps entero"):
+        symbol_rate_response([1.0], sps=Fraction(6, 5), rolloff=0.1)
+
+
+def test_common_signal_length_at_1p2_sps():
+    """Señal común del equipo: 81 920 símbolos a 6/5 sps -> 98 304 muestras por canal."""
+    esc = Scenario(Rs=60e9, sps=1.2)
+    sym = map_gray(prbs(15, 2 * 81920), "pam4")  # un tributario
+    x = shape(sym, esc, span=32)
+    assert x.shape == (81920 * 6 // 5,) == (98304,)
+
+
+@pytest.mark.parametrize("sps", [1, 2, 4, 8, 16])
+def test_shape_integer_sps_bit_exact(sps):
+    """Con sps entero, shape es exactamente la cadena anterior (sin decimar)."""
+    esc = Scenario(Rs=32e9, sps=sps)
+    sym = map_gray(prbs(15, 4 * 300), "qam16")
+    up = np.zeros(300 * sps, complex)
+    up[::sps] = sym
+    ref = np.convolve(up, rrc_taps(esc.rolloff, 64, sps), mode="same")
+    ref = ref / np.sqrt(np.mean(np.abs(ref) ** 2))
+    assert np.array_equal(shape(sym, esc), ref)

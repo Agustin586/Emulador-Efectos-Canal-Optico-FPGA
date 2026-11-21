@@ -36,7 +36,8 @@ def test_fs_follows_scenario():
     [
         {"Rs": 500e9},
         {"Rs": 0.5e9},
-        {"sps": 3},
+        {"sps": 17},
+        {"sps": 0.5},
         {"wavelength": 1600e-9},
         {"wavelength": 1310e-9},
         {"rolloff": 0.0},
@@ -115,7 +116,9 @@ def test_rs_up_to_480_gbd():
         Scenario(Rs=481e9)
 
 
-@pytest.mark.parametrize("sps", [Fraction(1, 2), 0.9, Fraction(17, 1), Fraction(33, 17), 3, 1.25 + 1e-9, "2"])
+@pytest.mark.parametrize(
+    "sps", [Fraction(1, 2), 0.9, 0, -1.2, Fraction(17, 1), Fraction(33, 2), Fraction(33, 17), 1.25 + 1e-9, "2", True]
+)
 def test_rational_sps_rejected(sps):
     with pytest.raises(ValueError):
         Scenario(sps=sps)
@@ -127,3 +130,42 @@ def test_to_dict_rational_sps_is_json_ready():
     d = Scenario(Rs=60e9, sps=Fraction(6, 5)).to_dict()
     assert d["sps"] == 1.2 and (d["sps_up"], d["sps_down"]) == (6, 5)
     json.dumps(d)
+
+
+# --------------------------------------------------------------------------
+# B5.4: sps racional de 1 a 16 con denominador <= 16, alias y fs exacto
+# --------------------------------------------------------------------------
+def test_fs_exact_project_rate():
+    """60 GBd a 6/5 sps: fs = 72 GSa/s exacto (sin pytest.approx)."""
+    assert Scenario(Rs=60e9, sps=Fraction(6, 5)).fs == 72e9
+
+
+def test_float_sps_gives_same_scenario():
+    assert Scenario(Rs=60e9, sps=1.2) == Scenario(Rs=60e9, sps=Fraction(6, 5))
+
+
+def test_sps_num_den_aliases():
+    esc = Scenario(Rs=60e9, sps=Fraction(6, 5))
+    assert (esc.sps_num, esc.sps_den) == (6, 5) == (esc.sps_up, esc.sps_down)
+    assert (Scenario(sps=4).sps_num, Scenario(sps=4).sps_den) == (4, 1)
+
+
+@pytest.mark.parametrize("sps", [1, 2, 4, 8, 16])
+def test_integer_sps_same_as_before(sps):
+    """Con los enteros de antes (1, 2, 4, 8, 16): int, mismo fs y mismo to_dict."""
+    esc = Scenario(Rs=32e9, sps=sps)
+    assert esc.sps == sps and type(esc.sps) is int
+    assert esc.fs == 32e9 * sps  # la fórmula anterior, float(Rs·sps)
+    assert esc.to_dict() == {"Rs": 32e9, "sps": sps, "wavelength": 1550e-9, "rolloff": 0.1,
+                             "fs": 32e9 * sps, "Ts": 1 / (32e9 * sps)}
+
+
+@pytest.mark.parametrize("sps", range(1, 17))
+def test_any_integer_sps_1_to_16(sps):
+    esc = Scenario(sps=sps)
+    assert esc.sps == sps and type(esc.sps) is int and esc.sps_den == 1
+
+
+@pytest.mark.parametrize("sps", [Fraction(16, 1), 16.0, Fraction(31, 16), Fraction(17, 16), 1])
+def test_sps_range_limits_accepted(sps):
+    Scenario(sps=sps)

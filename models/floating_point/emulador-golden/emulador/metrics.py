@@ -416,7 +416,9 @@ def symbol_rate_response(
         h       : coeficientes del canal a la frecuencia de muestreo (no a la
                   tasa de símbolos): con sps = 2, un eco de un símbolo está 2
                   coeficientes más adelante.
-        sps     : muestras por símbolo.
+        sps     : muestras por símbolo, solo entero (B5.4): con sps racional
+                  (por ejemplo Fraction(6, 5)) lanza ``ValueError``; analizar a
+                  ``sps_num`` muestras por símbolo con K y d escalados.
         rolloff : roll-off del RRC (0.1 en el escenario de referencia).
         span    : largo del RRC en símbolos.
         phase   : fase de muestreo, 0 <= phase < sps. Selecciona en qué muestra
@@ -437,6 +439,9 @@ def symbol_rate_response(
         >>> round(isi_power_ratio(p), 2)
         0.09
     """
+    if int(sps) != sps:
+        raise ValueError(f"symbol_rate_response: solo sps entero; sps racional {sps} no soportado")
+    sps = int(sps)
     if not 0 <= phase < sps:
         raise ValueError(f"phase debe estar entre 0 y sps - 1 = {sps - 1}: {phase!r}")
     g = rrc_taps(rolloff, span, sps)
