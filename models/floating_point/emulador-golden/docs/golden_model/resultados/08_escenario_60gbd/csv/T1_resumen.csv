@@ -1,0 +1,6 @@
+bloque,pico máx.,casos con saturación,casos,muestras saturadas (total),SQNR completa mín. [dB]
+entrada,0.697937,0,1,0,89.0457
+CD z <= 8 km,0.936219,0,8,0,89.0239
+CD todas,1.4005,6,16,112,41.63
+ISI (a) Σ|h|²=1,0.744357,0,28,0,89.2412
+ISI (b) RMS unitario,0.699067,0,28,0,89.0311

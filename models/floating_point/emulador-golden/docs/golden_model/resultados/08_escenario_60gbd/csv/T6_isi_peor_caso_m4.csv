@@ -1,0 +1,3 @@
+B <=,"a (98,5 %)",b 0.01,b 0.006,b 0.002,c 0.01,c 0.006,c 0.002,d 0.01,d 0.006,d 0.002
+0.4·Rs,"4 (Butterworth m=4, 0.3)","15 (Butterworth m=4, 0.4)","27 (Butterworth m=4, 0.4)",">64 (Bessel m=4, 0.3)","11 (Butterworth m=4, 0.4)","13 (Butterworth m=4, 0.4)","19 (Butterworth m=4, 0.4)","9 (Butterworth m=4, 0.3)","11 (Butterworth m=4, 0.4)","15 (Bessel m=4, 0.3)"
+0.5·Rs,"5 (Bessel m=4, 0.5)","30 (Bessel m=4, 0.5)","51 (Bessel m=4, 0.5)",">64 (Bessel m=4, 0.3)","13 (Bessel m=4, 0.5)","17 (Bessel m=4, 0.5)","24 (Bessel m=4, 0.5)","11 (Bessel m=4, 0.5)","13 (Bessel m=4, 0.5)","20 (Bessel m=4, 0.5)"
