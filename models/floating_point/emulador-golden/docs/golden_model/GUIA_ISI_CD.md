@@ -794,6 +794,11 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 - **Pendiente con el equipo:** las 4 PRBS15 son desplazamientos de la misma secuencia m (ver §6).
 - **Listo cuando:** el notebook corre de principio a fin y guarda figuras (PNG y SVG), CSV y `meta.json`.
 
+**D1.2 · Ampliación del notebook 08** (sin tocar el núcleo)
+- (e) ISI con mínimos cuadrados en frecuencia pesados por |H<sub>RRC</sub>(f)|² (roll-off 0,1), sin datos, para los 3 perfiles con m = 4 y B = 0,3 a 0,5·R<sub>s</sub>: columna (e) en T5 y T6. Da los mismos K que (d).
+- T5b: cota Σ|h|·pico, pico real del acumulador (salida y sumas parciales en forma directa) y bits enteros para los diseños (c) y (e) con K = 12 y 16. Cota: hasta 2 bits; pico real: 1 bit.
+- T1b: CD entre 10 y 20 km en Q1.15. Sin saturación hasta 10 km; satura desde 12 km.
+
 ## 4. Checklist
 
 Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en el mismo commit que la completa.
@@ -856,6 +861,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 
 *Escenario común del equipo (documento del 21/11/2026)*
 - [x] D1.1 · Notebook `08_escenario_60gbd_1p2sps`: rango en Q1.15, CD a distancias cortas, ISI a 1,2 sps y recursos por fórmula (sin decidir)
+- [x] D1.2 · Notebook 08: ISI con MC pesado por |H<sub>RRC</sub>|² (e), acumulador de la ISI (T5b) y CD entre 10 y 20 km (T1b)
 
 **Cuantización y exportación**
 - [x] C1.1 · Confirmar RFSoC, P, f<sub>clk</sub> y N<sub>max</sub>; actualizar `HardwareParams` y la fila 7 de §1 (dispositivo sin confirmar: queda parametrizado, decisión 7)

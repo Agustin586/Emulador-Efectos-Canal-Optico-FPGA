@@ -1,25 +1,29 @@
 {
   "notebook": "08_escenario_60gbd_1p2sps.ipynb",
   "tarea": "D1.1",
-  "fecha_utc": "2026-11-21T21:48:04+00:00",
+  "fecha_utc": "2026-11-21T21:59:21+00:00",
   "git": {
-    "commit": "6ea542a8c07e868407634731d203653776e43337",
+    "commit": "964d00c3efa79058d3c2433340e434a3053bf0ce",
     "branch": "wanda_dev",
     "dirty_files": [
       "D \"models/floating_point/emulador-golden/docs/golden_model/Arquitectura de la FFT del bloque de CD \\342\\200\\224 Recomendaci\\303\\263n y especificaci\\303\\263n.pdf\"",
       " M models/floating_point/emulador-golden/docs/golden_model/GUIA_ISI_CD.md",
-      " M models/floating_point/emulador-golden/emulador/config.py",
-      " M models/floating_point/emulador-golden/emulador/metrics.py",
-      " M models/floating_point/emulador-golden/emulador/plots.py",
-      " M models/floating_point/emulador-golden/emulador/rx.py",
-      " M models/floating_point/emulador-golden/notebooks/00_escenario_y_convenciones.ipynb",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/08_escenario_60gbd/csv/T5_isi_K_minimo.csv",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/08_escenario_60gbd/csv/T5_isi_curvas_vs_K.csv",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/08_escenario_60gbd/csv/T6_isi_peor_caso_m4.csv",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/08_escenario_60gbd/fig/G1_histogramas.svg",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/08_escenario_60gbd/fig/G2_cd_nrmse_vs_K.svg",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/08_escenario_60gbd/fig/G3_sqnr_bx_bh.svg",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/08_escenario_60gbd/fig/G4_isi_K_vs_B.svg",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/08_escenario_60gbd/fig/G5_bessel4_modulo_retardo.svg",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/08_escenario_60gbd/fig/G6_dsp_vs_P.svg",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/08_escenario_60gbd/meta.json",
       " M models/floating_point/emulador-golden/notebooks/05_cuantizacion.ipynb",
-      " M models/floating_point/emulador-golden/tests/test_config.py",
-      " M models/floating_point/emulador-golden/tests/test_stimuli.py",
+      " M models/floating_point/emulador-golden/notebooks/08_escenario_60gbd_1p2sps.ipynb",
+      " M models/floating_point/emulador-golden/notebooks/utils_08.py",
       "?? \"models/floating_point/emulador-golden/docs/golden_model/Arquitectura de la FFT del bloque de CD \\342\\200\\224 Recomendaci\\303\\263n y especificaci\\303\\263n.md\"",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/",
-      "?? models/floating_point/emulador-golden/notebooks/08_escenario_60gbd_1p2sps.ipynb",
-      "?? models/floating_point/emulador-golden/notebooks/utils_08.py"
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/08_escenario_60gbd/csv/T1b_cd_10a20km.csv",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/08_escenario_60gbd/csv/T5b_isi_acumulador.csv"
     ]
   },
   "versiones": {
@@ -184,6 +188,18 @@
     "ajuste": "primera mitad, medicion segunda mitad, 512 muestras por borde",
     "K_G5": 16
   },
+  "d1_2": {
+    "criterio_e": "MC en frecuencia pesado por |H_RRC(f)|^2 (roll-off 0,1), sin datos; m = 4 y B <= 0,5 Rs",
+    "acumulador": "forma directa, sumas parciales en el orden k = 0..K-1; disenos c y e, K = 12 y 16",
+    "z_T1b_km": [
+      10,
+      12,
+      14,
+      16,
+      18,
+      20
+    ]
+  },
   "t7": {
     "dsp_total": 4272,
     "P": [
@@ -197,9 +213,9 @@
     "senal_comun_s": 0.4,
     "parte1_s": 1.6,
     "parte2_s": 27.7,
-    "parte3_calculo_s": 81.9,
-    "parte3_s": 85.3,
+    "parte3_calculo_s": 92.4,
+    "parte3_s": 96.0,
     "parte4_s": 0.7,
-    "total_s": 121.4
+    "total_s": 132.7
   }
 }

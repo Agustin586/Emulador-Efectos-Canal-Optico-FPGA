@@ -348,9 +348,14 @@ class LagGram:
             c += (A.conj().T @ y_al[idx]).real
         return c
 
-    def c_freq(self, T_band: np.ndarray) -> np.ndarray:
+    def c_freq(self, T_band: np.ndarray, W: np.ndarray | None = None) -> np.ndarray:
         a = np.exp(-2j * np.pi * self.f_band[None, :] * self.lags[:, None] / FS)
-        return (a.conj() @ T_band).real
+        return (a.conj() @ (T_band if W is None else W * T_band)).real
+
+    def G_weighted(self, W: np.ndarray) -> np.ndarray:
+        """G[l1, l2] = Σ_f W(f) cos(2π f (l1 - l2) / fs) en la banda (Toeplitz), D1.2."""
+        r = (W[None, :] * np.cos(2 * np.pi * np.outer(np.arange(len(self.lags)), self.f_band) / FS)).sum(-1)
+        return scipy.linalg.toeplitz(r)
 
 
 def best_ls(G, c, E, K):
@@ -368,8 +373,23 @@ def best_ls(G, c, E, K):
     return best
 
 
-def isi_case(x, kind, m, B_rel, train, test, gram: LagGram, Ks=range(1, K_MAX_SEARCH + 1)):
-    """Los cuatro criterios para un perfil y un B: dict con curvas por K y los h elegidos."""
+def rc_weight(f: np.ndarray) -> np.ndarray:
+    """|H_RRC(f)|² = coseno realzado con el roll-off del escenario (máximo 1, 0 fuera de (1 + β)Rs/2)."""
+    b = ESC.rolloff
+    f1, f2 = (1 - b) * RS / 2, (1 + b) * RS / 2
+    af = np.abs(f)
+    W = np.where(af <= f1, 1.0, 0.0)
+    mid = (af > f1) & (af < f2)
+    W[mid] = 0.5 * (1 + np.cos(np.pi / (b * RS) * (af[mid] - f1)))
+    return W
+
+
+def isi_case(x, kind, m, B_rel, train, test, gram: LagGram, Ks=range(1, K_MAX_SEARCH + 1), weights=None):
+    """Los cuatro criterios para un perfil y un B: dict con curvas por K y los h elegidos.
+
+    weights : None o {nombre: (G, W)} con mínimos cuadrados en frecuencia pesados
+              por W(f) en la banda (D1.2, criterio (e)); agrega res[nombre] y h[K][nombre].
+    """
     h = h_reference(kind, m, B_rel)
     o64, _ = best_window(h, 64)
     y_full = fftconvolve(x, h)
@@ -385,6 +405,11 @@ def isi_case(x, kind, m, B_rel, train, test, gram: LagGram, Ks=range(1, K_MAX_SE
     c_frq, E_frq = gram.c_freq(T_band), float(np.sum(np.abs(T_band) ** 2))
     ref_te = y_al[test]
     res = {"energy": {}, "trunc": {}, "lsf": {}, "lsd": {}, "h": {}, "o64": o64}
+    weights = weights or {}
+    wsys = {}
+    for name, (Gw, W) in weights.items():
+        res[name] = {}
+        wsys[name] = (Gw, gram.c_freq(T_band, W), float(np.sum(W * np.abs(T_band) ** 2)))
     for K in Ks:
         # (a) energía en la mejor ventana
         o, frac = best_window(h, K)
@@ -402,6 +427,10 @@ def isi_case(x, kind, m, B_rel, train, test, gram: LagGram, Ks=range(1, K_MAX_SE
         s_d, h_d, _ = best_ls(gram.G_sig, c_sig, E_sig, K)
         res["lsd"][K] = nrmse(apply_at(x, h_d, int(gram.lags[s_d]), test), ref_te)
         res["h"][K] = {"trunc": (g * ht, s_t), "lsf": (h_f, int(gram.lags[s_f])), "lsd": (h_d, int(gram.lags[s_d]))}
+        for name, (Gw, cw, Ew) in wsys.items():
+            s_w, h_w, _ = best_ls(Gw, cw, Ew, K)
+            res[name][K] = nrmse(apply_at(x, h_w, int(gram.lags[s_w]), test), ref_te)
+            res["h"][K][name] = (h_w, int(gram.lags[s_w]))
     res["h_ref"] = h
     return res
 
@@ -412,6 +441,27 @@ def min_K(curve: dict, ok) -> int | None:
         if ok(curve[K]):
             return K
     return None
+
+
+def accumulator_peaks(channels: np.ndarray, h: np.ndarray, sl: slice) -> tuple[float, float]:
+    """Pico de la salida y de las sumas parciales de un FIR real en forma directa.
+
+    acc_k[n] = Σ_{j=0..k} h[j]·x[n - j], k = 0 … K-1 (orden de los coeficientes);
+    devuelve (max |acc_{K-1}|, max_k max |acc_k|) sobre los 4 canales en ``sl``.
+    """
+    out_pk = part_pk = 0.0
+    for x in channels:
+        acc = np.zeros(len(x))
+        for j, hj in enumerate(h):
+            acc[j:] += hj * x[: len(x) - j]
+            part_pk = max(part_pk, float(np.max(np.abs(acc[sl]))))
+        out_pk = max(out_pk, float(np.max(np.abs(acc[sl]))))
+    return out_pk, part_pk
+
+
+def int_bits(v: float) -> int:
+    """Bits enteros I (con signo, ac_fixed<W, I>) para representar ±v: 2^(I-1) > v."""
+    return int(np.floor(np.log2(v))) + 2
 
 
 # --------------------------------------------------------------------------
