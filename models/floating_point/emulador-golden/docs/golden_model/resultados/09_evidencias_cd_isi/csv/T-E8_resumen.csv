@@ -1,0 +1,14 @@
+decisión,valor propuesto,evidencia,estado
+Rango de CD,0 a 200 ps/nm nominal; opcional hasta 800 ps/nm,E1 (fuentes externas [1] a [3]); G-E2: R = 9 a 200 y 33 a 800 ps/nm,propuesta
+Parámetros de configuración de la CD,"D, S, z y λ; se informa también D·z","T-E1: mismo D·z da la misma salida (NRMSE ≤ 6.2e-16); λ = 1310 nm cambia la salida (NRMSE 0.56); S = 0,057 a 800 ps/nm: NRMSE 2.6e-03",propuesta
+Arquitectura de la CD,"(C) overlap-save, L = 256, V = 64","G-E3a, T-E3b, T-E3c, G-E3d: NRMSE 5.7e-04 a 200 y 2.7e-03 a 800 ps/nm; alcance 1e-2: 800 ps/nm",propuesta
+Por qué no (A),descartada en el rango,"T-E3c: alcance 1e-2 de (A) K_s=5: 10, K_s=7: 10, K_s=9: 10, ext. K_s=9, K_c=3: 17 ps/nm",propuesta
+Por qué no (B),descartada en el rango,"T-E3b y G-E4: K = 15 / 27 a 200 ps/nm y 39 / 59 a 800 (1e-2 / 1e-3); con P = 48, 2304 / 5760 DSP (1e-2, 200 / 800) contra 1128 de (C), externo",propuesta
+Nivel de señal y bits enteros,1 bit entero (Q1.15) con RMS ≤ 0.22 (nominal) / ≤ 0.2 (opcional),"T-E5, G-E5: pico con RMS 0,25: 1.120 a 200 y 1.179 a 800 ps/nm; costo de bajar a 0,18: 2.84 dB de SQNR de cuantización",pendiente con el equipo (RMS común)
+ISI: perfiles y B,"gaussiano, Bessel m = 4, Butterworth m = 4; B ≤ 0,5·Rs","G-E6a, G-E6b (salto en Nyquist con B = 0,6), T5 del 08",propuesta
+ISI: diseño y K,"(e) MC pesado por |H_RRC|², K = 12","G-E6a, G-E6c, T5 del 08: K máx. para 1e-2 con (e) y B ≤ 0,5 = 11; NRMSE máx. con K = 12: 7.13e-03",propuesta
+ISI: acumulador,2 bits enteros,"T5b del 08: cota pide I = 2, pico real I = 1 (diseño (e), K = 12)",propuesta
+Paralelismo de referencia,P = 48 por ciclo y por canal,"G-E4, T-E4, T-E6e: (C) 1128 DSP con P = 48; con P = 192 no entra en LUT (externo); ISI K = 12: 864 DSP con P = 48",propuesta
+Pendiente: km o memoria equivalente,sin decidir,"T-E7: sin par de la lista para 400 GBd, 40 km",pendiente con el equipo
+Pendiente: correlación de las PRBS15,sin decidir,08 (señal común) y guía §6; E5: corridas desplazadas y corrida larga,pendiente con el equipo
+Pendiente: RMS común,sin decidir,T-E5 y G-E5,pendiente con el equipo

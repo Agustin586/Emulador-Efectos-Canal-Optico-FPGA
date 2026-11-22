@@ -1,0 +1,5 @@
+caso,EVM %,fase,retardo símb.
+sin ISI (back-to-back),0.410912,0,0
+"gaussiano, B = 0,4·Rs, K = 12 (e)",15.2976,5,25
+"Bessel m=4, B = 0,4·Rs, K = 12 (e)",15.6755,5,45
+"Butterworth m=4, B = 0,4·Rs, K = 12 (e)",24.1255,1,26

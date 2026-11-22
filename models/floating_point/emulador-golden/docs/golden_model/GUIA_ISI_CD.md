@@ -799,6 +799,12 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 - T5b: cota Σ|h|·pico, pico real del acumulador (salida y sumas parciales en forma directa) y bits enteros para los diseños (c) y (e) con K = 12 y 16. Cota: hasta 2 bits; pico real: 1 bit.
 - T1b: CD entre 10 y 20 km en Q1.15. Sin saturación hasta 10 km; satura desde 12 km.
 
+**D2.1 · Evidencias de CD e ISI a 72 GS/s** (notebook `09_evidencias_cd_isi_72gsps`, utilidades en `notebooks/utils_09.py`, resultados e `informe.html` en `docs/golden_model/resultados/09_evidencias_cd_isi/`; sin tocar el núcleo)
+- **Objetivo:** una figura o tabla por cada decisión **propuesta** de CD e ISI con el rango de distancias nuevo (CD acumulada 0 a 200 ps/nm nominal, opcional hasta 800 ps/nm; fuentes externas citadas en E1). No toma decisiones: las de E8 quedan como "propuesta" o "pendiente con el equipo" en el notebook, sin filas nuevas en §1.
+- **Secciones:** E1 rango y parámetros (D, S, z, λ); E2 fuerza de la CD; E3 arquitectura de la CD ((A) primer orden, (B) FIR, (C) overlap-save con (L, V) = (128, 32), (256, 64), (512, 128)); E4 DSP por fórmula (y valores externos para (C)); E5 rango en Q1.15 por RMS (4 corridas desplazadas y una larga); E6 ISI (reutiliza T5, T5b, T6 y T7 del 08); E7 memoria equivalente (hipótesis pendiente del equipo); E8 resumen.
+- **Overlap-save con V ≠ L/2:** `os_hbar` y `os_apply` en `utils_09.py`, verificadas contra `cd_overlap_save` (V = L/2), con CD = 0 y contra `cd_reference`.
+- **Listo cuando:** el notebook corre de principio a fin y guarda figuras (PNG y SVG con `svg.hashsalt`), CSV, `meta.json` e `informe.html`.
+
 ## 4. Checklist
 
 Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en el mismo commit que la completa.
@@ -862,6 +868,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 *Escenario común del equipo (documento del 21/11/2026)*
 - [x] D1.1 · Notebook `08_escenario_60gbd_1p2sps`: rango en Q1.15, CD a distancias cortas, ISI a 1,2 sps y recursos por fórmula (sin decidir)
 - [x] D1.2 · Notebook 08: ISI con MC pesado por |H<sub>RRC</sub>|² (e), acumulador de la ISI (T5b) y CD entre 10 y 20 km (T1b)
+- [x] D2.1 · Notebook `09_evidencias_cd_isi_72gsps`: evidencias de CD (0 a 800 ps/nm) e ISI a 72 GS/s, con resumen de decisiones propuestas (E8) e `informe.html`
 
 **Cuantización y exportación**
 - [x] C1.1 · Confirmar RFSoC, P, f<sub>clk</sub> y N<sub>max</sub>; actualizar `HardwareParams` y la fila 7 de §1 (dispositivo sin confirmar: queda parametrizado, decisión 7)

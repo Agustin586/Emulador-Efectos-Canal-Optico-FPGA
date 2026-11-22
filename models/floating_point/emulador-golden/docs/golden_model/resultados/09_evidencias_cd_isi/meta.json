@@ -1,0 +1,171 @@
+{
+  "tarea": "D2.1",
+  "notebook": "09_evidencias_cd_isi_72gsps.ipynb",
+  "fecha_utc": "2026-11-22T13:31:54+00:00",
+  "git": {
+    "commit": "939adf20944e09991d53fc993f3102d5a73a1c3f",
+    "branch": "wanda_dev",
+    "dirty_files": [
+      "D \"models/floating_point/emulador-golden/docs/golden_model/Arquitectura de la FFT del bloque de CD \\342\\200\\224 Recomendaci\\303\\263n y especificaci\\303\\263n.pdf\"",
+      " M models/floating_point/emulador-golden/notebooks/05_cuantizacion.ipynb",
+      "?? \"models/floating_point/emulador-golden/docs/golden_model/Arquitectura de la FFT del bloque de CD \\342\\200\\224 Recomendaci\\303\\263n y especificaci\\303\\263n.md\"",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/",
+      "?? models/floating_point/emulador-golden/notebooks/09_evidencias_cd_isi_72gsps.ipynb",
+      "?? models/floating_point/emulador-golden/notebooks/utils_09.py"
+    ]
+  },
+  "versiones": {
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "matplotlib": "3.11.2"
+  },
+  "escenario": {
+    "Rs": 60000000000.0,
+    "sps": 1.2,
+    "wavelength": 1.55e-06,
+    "rolloff": 0.1,
+    "fs": 72000000000.0,
+    "Ts": 1.3888888888888888e-11,
+    "sps_up": 6,
+    "sps_down": 5
+  },
+  "senal_comun": "utils_08.common_signal (ver meta.json del 08)",
+  "cd": {
+    "D_ps_nm_km": 17.0,
+    "lambda_m": 1.55e-06,
+    "grilla_ps_nm": [
+      0,
+      5,
+      10,
+      17,
+      25,
+      50,
+      75,
+      100,
+      150,
+      200,
+      300,
+      400,
+      600,
+      800
+    ],
+    "S_alt_ps_nm2_km": 0.057,
+    "S_alt_en": [
+      200,
+      800
+    ],
+    "nominal_ps_nm": 200,
+    "opcional_ps_nm": 800,
+    "pares_os": [
+      [
+        128,
+        32
+      ],
+      [
+        256,
+        64
+      ],
+      [
+        512,
+        128
+      ]
+    ],
+    "pares_os_E7": [
+      [
+        256,
+        64
+      ],
+      [
+        512,
+        128
+      ],
+      [
+        1024,
+        256
+      ],
+      [
+        2048,
+        512
+      ]
+    ],
+    "K_B_max": 81,
+    "tolerancias": [
+      0.01,
+      0.001
+    ],
+    "medicion": "contra cd_reference con el mismo S, segunda mitad sin 256 muestras por borde, peor de X e Y; (C) con retardo V/2"
+  },
+  "e5": {
+    "rms": [
+      0.25,
+      0.22,
+      0.2,
+      0.18
+    ],
+    "desfasaje_bits": 2047,
+    "corridas": [
+      [
+        0,
+        8191,
+        16383,
+        24575
+      ],
+      [
+        2047,
+        10238,
+        18430,
+        26622
+      ],
+      [
+        4094,
+        12285,
+        20477,
+        28669
+      ],
+      [
+        6141,
+        14332,
+        22524,
+        30716
+      ]
+    ],
+    "simbolos_corrida_larga": 327680,
+    "borde_muestras": 1024,
+    "rms_max_sin_saturar": {
+      "nominal": 0.22,
+      "opcional": 0.2
+    }
+  },
+  "e4_externo": {
+    "C_256_64_dsp": {
+      "48": 1128,
+      "96": 2256,
+      "192": 1536
+    },
+    "nota": "analisis externo, no recalculado"
+  },
+  "e6": {
+    "diseno": "e",
+    "K": 12,
+    "perfiles": [
+      "gaussiano",
+      "Bessel m=4",
+      "Butterworth m=4"
+    ],
+    "reutiliza": "csv del 08"
+  },
+  "tiempos_s": {
+    "E1_s": 0.2,
+    "E2_s": 2.7,
+    "E3_calculo_s": 7.7,
+    "E3_s": 9.6,
+    "E4_s": 0.5,
+    "E5_corridas_s": 6.9,
+    "E5_larga_s": 4.8,
+    "E5_s": 12.4,
+    "E6_calculo_s": 11.9,
+    "E6_s": 18.5,
+    "E7_s": 0.6,
+    "total": 45.1
+  }
+}
