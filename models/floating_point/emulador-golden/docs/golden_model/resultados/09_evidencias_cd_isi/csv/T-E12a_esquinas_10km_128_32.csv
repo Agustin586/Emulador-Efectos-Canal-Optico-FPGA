@@ -1,0 +1,7 @@
+D ps/(nm·km),S ps/(nm²·km),z km,λ nm,CD efectiva ps/nm,R,"NRMSE (128,32)","NRMSE (256,64)","(128,32) cumple 1e-2","(128,32) cumple 1e-3",condición ARM ≤ 200,en E10
+18,0.092,10,1565,183.501,7,0.00230557,0.000536131,True,False,True,True
+18,0,10,1530,175.385,7,0.00216873,0.000498676,True,False,True,False
+17,0.057,10,1550,170,7,0.00211908,0.000492384,True,False,True,True
+3.5,0.092,10,1330,25.7696,1,0.000324804,7.93333e-05,True,True,True,False
+-3.5,0.092,10,1285,24.0553,1,0.000279915,6.36309e-05,True,True,True,False
+0,0.092,10,1310,0,1,2.06228e-05,9.48129e-06,True,True,True,False

@@ -474,3 +474,23 @@ def os_error_direct(X, D_ps, S_ps, z_km, lam_nm, L=L_OS, V=V_OS, sl=None):
     ref = cd_reference(X, FS, D, lam, z, S)
     sl = slice(None) if sl is None else sl
     return nrmse(y[sl], ref[sl]), cd_R(FS, D, lam, z)
+
+
+def os_effective_response_direct(L, V, D_ps, S_ps, z_km, lam_nm, over: int = 16):
+    """Como ``utils_09.os_effective_response``, con (D, S, z, λ) directos (D2.5).
+
+    Devuelve (f, G, Hid): G (L − V, over·L) es la respuesta de cada posición de
+    salida del bloque y Hid = H_CD(f)·exp(−j2πf(V/2)/fs) en la grilla fina.
+    """
+    lam, z = lam_nm * 1e-9, z_km * 1e3
+    D, S = D_si(D_ps), S_si(S_ps)
+    k = np.fft.fftfreq(L) * L
+    hb = np.fft.ifft(cd_transfer(L, FS, D, lam, z, S) * np.exp(-2j * np.pi * k * (V / 2) / L))
+    Lf = over * L
+    f = np.fft.fftfreq(Lf, 1 / FS)
+    G = np.empty((L - V, Lf), complex)
+    for j, i in enumerate(range(V, L)):
+        start = i - L + 1
+        G[j] = np.fft.fft(np.roll(hb, -start), Lf) * np.exp(-2j * np.pi * f * start / FS)
+    Hid = cd_transfer(Lf, FS, D, lam, z, S) * np.exp(-2j * np.pi * f * (V / 2) / FS)
+    return f, G, Hid
