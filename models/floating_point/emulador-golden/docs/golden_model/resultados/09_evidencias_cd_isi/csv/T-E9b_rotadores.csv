@@ -1,0 +1,4 @@
+P,P_FFT,variables,generales,W8 constantes,W8 alternantes,W8 total,×(−j) alternantes,externo var / gen / W8,coincide
+48,64,62,56,20,1,21,64,62 / 56 / 21,True
+96,128,124,112,40,2,42,64,124 / 112 / 42,True
+192,256,0,408,84,0,84,0,0 / 408 / 84,True

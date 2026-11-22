@@ -72,7 +72,8 @@ class Scenario:
                  p = ``sps_num`` muestras por símbolo y se decima por
                  q = ``sps_den`` (``stimuli.shape``). Las cantidades en muestras
                  (retardos de la ISI, d, R y N de la CD) son siempre a fs.
-    wavelength : longitud de onda de la portadora [m], banda C (1530 a 1565 nm).
+    wavelength : longitud de onda de la portadora [m]: banda O (1285 a 1330 nm)
+                 o banda C (1530 a 1565 nm), las de la fibra G.652.D (D2.2).
     rolloff    : roll-off del RRC, de 0.05 a 0.5.
     """
 
@@ -83,13 +84,14 @@ class Scenario:
 
     SPS_MAX: ClassVar[int] = 16
     SPS_DOWN_MAX: ClassVar[int] = 16
+    WAVELENGTH_BANDS: ClassVar[tuple[tuple[float, float], ...]] = ((1285e-9, 1330e-9), (1530e-9, 1565e-9))  # O y C
 
     def __post_init__(self):
         if not (1e9 <= self.Rs <= 480e9):
             raise ValueError(f"Rs fuera de rango (1 a 480 GBd): {self.Rs!r}")
         object.__setattr__(self, "sps", self._normalize_sps(self.sps))
-        if not (1530e-9 <= self.wavelength <= 1565e-9):
-            raise ValueError(f"wavelength fuera de la banda C (1530 a 1565 nm): {self.wavelength!r}")
+        if not any(lo <= self.wavelength <= hi for lo, hi in self.WAVELENGTH_BANDS):
+            raise ValueError(f"wavelength fuera de las bandas O (1285 a 1330 nm) y C (1530 a 1565 nm): {self.wavelength!r}")
         if not (0.05 <= self.rolloff <= 0.5):
             raise ValueError(f"rolloff fuera de rango (0.05 a 0.5): {self.rolloff!r}")
 

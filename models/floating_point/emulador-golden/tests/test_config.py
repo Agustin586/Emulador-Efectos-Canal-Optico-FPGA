@@ -39,7 +39,11 @@ def test_fs_follows_scenario():
         {"sps": 17},
         {"sps": 0.5},
         {"wavelength": 1600e-9},
-        {"wavelength": 1310e-9},
+        {"wavelength": 1280e-9},
+        {"wavelength": 1335e-9},
+        {"wavelength": 1450e-9},
+        {"wavelength": 1525e-9},
+        {"wavelength": 1570e-9},
         {"rolloff": 0.0},
         {"rolloff": 0.8},
     ],
@@ -52,6 +56,12 @@ def test_scenario_rejects_out_of_range(kwargs):
 def test_scenario_accepts_range_limits():
     Scenario(Rs=1e9, wavelength=1530e-9, rolloff=0.05)
     Scenario(Rs=300e9, wavelength=1565e-9, rolloff=0.5, sps=16)
+
+
+@pytest.mark.parametrize("lam", [1285e-9, 1310e-9, 1330e-9, 1530e-9, 1550e-9, 1565e-9])
+def test_scenario_accepts_o_and_c_bands(lam):
+    """D2.2: banda O (1285 a 1330 nm) y banda C (1530 a 1565 nm) de la fibra G.652.D."""
+    assert Scenario(wavelength=lam).wavelength == lam
 
 
 def test_scenario_is_immutable():

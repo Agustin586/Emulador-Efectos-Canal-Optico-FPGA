@@ -1,0 +1,10 @@
+caso,modulo,parametros,LUT,FF,DSP,CARRY8,WNS_ns
+add_W14,add_reg,"W 14",14,43,0,2,1.878
+add_W17,add_reg,"W 17",17,52,0,3,1.883
+add_W20,add_reg,"W 20",20,61,0,3,1.952
+bfly_W18,bfly_r2,"W 18",72,148,0,12,1.765
+rot_m16,rot_const,"WD 18 WC 16 C 32758 S -804",604,102,0,88,-0.519
+rot_m432,rot_const,"WD 18 WC 16 C 25833 S -20160",451,104,0,73,-0.329
+rot_m2352,rot_const,"WD 18 WC 16 C -29269 S 14733",646,104,0,90,-0.145
+rot_w8,rot_w8,"WD 18 WC 16 K 23170",210,104,0,38,0.081
+cmul3,cmul3,"WD 18 WC 18",0,0,3,0,1.119

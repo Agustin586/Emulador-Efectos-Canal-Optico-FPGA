@@ -1,0 +1,41 @@
+W_d,W_c,variante,LUT CD P=48 (conteo)
+14,12,sin compartir,183776
+16,12,sin compartir,200832
+17,12,sin compartir,209360
+18,12,sin compartir,217888
+20,12,sin compartir,234944
+14,12,MCM,183776
+16,12,MCM,200832
+17,12,MCM,209360
+18,12,MCM,217888
+20,12,MCM,234944
+14,14,sin compartir,214936
+16,14,sin compartir,233672
+17,14,sin compartir,243040
+18,14,sin compartir,252408
+20,14,sin compartir,271144
+14,14,MCM,211480
+16,14,MCM,229960
+17,14,MCM,239200
+18,14,MCM,248440
+20,14,MCM,266920
+14,16,sin compartir,237160
+16,16,sin compartir,256728
+17,16,sin compartir,266512
+18,16,sin compartir,276296
+20,16,sin compartir,295864
+14,16,MCM,236232
+16,16,MCM,255736
+17,16,MCM,265488
+18,16,MCM,275240
+20,16,MCM,294744
+14,18,sin compartir,276176
+16,18,sin compartir,297552
+17,18,sin compartir,308240
+18,18,sin compartir,318928
+20,18,sin compartir,340304
+14,18,MCM,271216
+16,18,MCM,292272
+17,18,MCM,302800
+18,18,MCM,313328
+20,18,MCM,334384

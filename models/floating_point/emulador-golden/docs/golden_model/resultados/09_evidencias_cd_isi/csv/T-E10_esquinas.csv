@@ -1,0 +1,9 @@
+D ps/(nm·km),S ps/(nm²·km),z km,λ nm,CD efectiva ps/nm,R,"NRMSE (256,64)",cumple 1e-2,cumple 1e-3,condición ARM ≤ 800,condición ARM ≤ 300
+18,0.092,40,1565,734.003,31,0.00241654,True,False,True,False
+18,0,40,1530,701.539,29,0.00222951,True,False,True,False
+17,0.057,10,1550,170,7,0.000492384,True,True,True,True
+18,0.092,10,1565,183.501,7,0.000536131,True,True,True,True
+3.5,0.092,40,1330,103.078,5,0.000317935,True,True,True,True
+-3.5,0.092,40,1285,96.2212,3,0.000255043,True,True,True,True
+0,0.092,40,1310,0,1,3.7925e-05,True,True,True,True
+18,0.092,0,1550,0,1,3.20109e-15,True,True,True,True

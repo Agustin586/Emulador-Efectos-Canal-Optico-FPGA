@@ -1,0 +1,7 @@
+P,memoria,FF,SRL (LUT),LUTRAM (LUT),BRAM36,URAM,menor fracción del dispositivo,profundidad (ciclos)
+48,H̄ doble buffer,18432,2304,2640,32,32,SRL (LUT),8
+48,bypass,122880,6144,3512,43,43,LUTRAM (LUT),40
+96,H̄ doble buffer,18432,4608,5272,64,64,SRL (LUT),4
+96,bypass,221184,12288,7024,86,86,LUTRAM (LUT),36
+192,H̄ doble buffer,18432,9216,10536,128,128,FF,2
+192,bypass,331776,12288,14048,171,171,SRL (LUT),27

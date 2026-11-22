@@ -1,17 +1,38 @@
 {
   "tarea": "D2.1",
   "notebook": "09_evidencias_cd_isi_72gsps.ipynb",
-  "fecha_utc": "2026-11-22T13:31:54+00:00",
+  "fecha_utc": "2026-11-22T15:06:23+00:00",
   "git": {
-    "commit": "939adf20944e09991d53fc993f3102d5a73a1c3f",
+    "commit": "4b6ce2050f77a79db757cb7670ddbc501f6661f9",
     "branch": "wanda_dev",
     "dirty_files": [
       "D \"models/floating_point/emulador-golden/docs/golden_model/Arquitectura de la FFT del bloque de CD \\342\\200\\224 Recomendaci\\303\\263n y especificaci\\303\\263n.pdf\"",
+      " M models/floating_point/emulador-golden/docs/golden_model/GUIA_ISI_CD.md",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E8_resumen.csv",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/meta.json",
+      " M models/floating_point/emulador-golden/emulador/config.py",
+      " M models/floating_point/emulador-golden/notebooks/00_escenario_y_convenciones.ipynb",
       " M models/floating_point/emulador-golden/notebooks/05_cuantizacion.ipynb",
+      " M models/floating_point/emulador-golden/notebooks/09_evidencias_cd_isi_72gsps.ipynb",
+      " M models/floating_point/emulador-golden/tests/test_config.py",
       "?? \"models/floating_point/emulador-golden/docs/golden_model/Arquitectura de la FFT del bloque de CD \\342\\200\\224 Recomendaci\\303\\263n y especificaci\\303\\263n.md\"",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/",
-      "?? models/floating_point/emulador-golden/notebooks/09_evidencias_cd_isi_72gsps.ipynb",
-      "?? models/floating_point/emulador-golden/notebooks/utils_09.py"
+      "?? models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E10_esquinas.csv",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9_recursos.csv",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9a_sqnr_vs_anchos.csv",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9b_rotadores.csv",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9c_calibracion.csv",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9d_isi_ffa_ordenes.csv",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9e_memorias.csv",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9f_desglose_cd_P48.csv",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9g_lut_cd_vs_anchos_P48.csv",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E10_esquinas_vs_cd_efectiva.png",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E10_esquinas_vs_cd_efectiva.svg",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E9a_recursos_vs_P.png",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E9a_recursos_vs_P.svg",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E9b_lut_cd_vs_anchos_P48.png",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E9b_lut_cd_vs_anchos_P48.svg",
+      "?? models/floating_point/emulador-golden/notebooks/utils_09b.py"
     ]
   },
   "versiones": {
@@ -154,18 +175,106 @@
     ],
     "reutiliza": "csv del 08"
   },
+  "e9": {
+    "dispositivo": {
+      "LUT": 425280,
+      "FF": 850560,
+      "BRAM36": 1080,
+      "URAM": 80,
+      "DSP": 4272
+    },
+    "fuente_dispositivo": "base de partes de Vivado 2024.2, xczu48dr-fsvg1517-2-e",
+    "criterio_diseno": {
+      "LUT": 0.7,
+      "FF": 0.7,
+      "DSP": 0.8,
+      "BRAM36": 0.8
+    },
+    "W_d_min": 17,
+    "W_c_min": 12,
+    "W_h": 18,
+    "calibracion": {
+      "add": 0.9444444444444444,
+      "bfly": 0.9473684210526315,
+      "rot": 0.8887147335423198,
+      "rot MCM": 0.9545454545454546,
+      "w8": 0.5706521739130435,
+      "ff": 0.9862637362637363,
+      "dsp": 1.0
+    },
+    "calibrado_con_sintesis": true
+  },
+  "e10": {
+    "esquinas": [
+      [
+        18,
+        0.092,
+        40,
+        1565
+      ],
+      [
+        18,
+        0,
+        40,
+        1530
+      ],
+      [
+        17,
+        0.057,
+        10,
+        1550
+      ],
+      [
+        18,
+        0.092,
+        10,
+        1565
+      ],
+      [
+        3.5,
+        0.092,
+        40,
+        1330
+      ],
+      [
+        -3.5,
+        0.092,
+        40,
+        1285
+      ],
+      [
+        0,
+        0.092,
+        40,
+        1310
+      ],
+      [
+        18,
+        0.092,
+        0,
+        1550
+      ]
+    ],
+    "os": [
+      256,
+      64
+    ]
+  },
   "tiempos_s": {
     "E1_s": 0.2,
-    "E2_s": 2.7,
-    "E3_calculo_s": 7.7,
-    "E3_s": 9.6,
+    "E2_s": 2.8,
+    "E3_calculo_s": 8.5,
+    "E3_s": 10.5,
     "E4_s": 0.5,
-    "E5_corridas_s": 6.9,
-    "E5_larga_s": 4.8,
-    "E5_s": 12.4,
-    "E6_calculo_s": 11.9,
-    "E6_s": 18.5,
+    "E5_corridas_s": 7.1,
+    "E5_larga_s": 5.0,
+    "E5_s": 12.7,
+    "E6_calculo_s": 12.1,
+    "E6_s": 18.8,
     "E7_s": 0.6,
-    "total": 45.1
+    "E9_sqnr_s": 10.5,
+    "E9_s": 12.3,
+    "E10_s": 1.2,
+    "total": 60.3
   }
 }

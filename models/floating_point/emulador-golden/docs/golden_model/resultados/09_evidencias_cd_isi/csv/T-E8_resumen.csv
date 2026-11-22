@@ -9,6 +9,8 @@ ISI: perfiles y B,"gaussiano, Bessel m = 4, Butterworth m = 4; B ≤ 0,5·Rs","G
 ISI: diseño y K,"(e) MC pesado por |H_RRC|², K = 12","G-E6a, G-E6c, T5 del 08: K máx. para 1e-2 con (e) y B ≤ 0,5 = 11; NRMSE máx. con K = 12: 7.13e-03",propuesta
 ISI: acumulador,2 bits enteros,"T5b del 08: cota pide I = 2, pico real I = 1 (diseño (e), K = 12)",propuesta
 Paralelismo de referencia,P = 48 por ciclo y por canal,"G-E4, T-E4, T-E6e: (C) 1128 DSP con P = 48; con P = 192 no entra en LUT (externo); ISI K = 12: 864 DSP con P = 48",propuesta
+Rango de parámetros de la CD (G.652.D),"z 0–40 km; λ banda O o C; D −3,5 a 3,5 (O) / 0 a 18 (C); S 0 a 0,092; CD efectiva ≤ 800 (≤ 300 con 1e-3)","T-E10, G-E10: NRMSE máx. en las esquinas 2.42e-03; Scenario acepta O y C (D2.2)",propuesta (fila 35 de §1)
+Recursos CD + ISI (estimación),"P = 48: 266209 LUT (MCM, calibrado), 1992 DSP","T-E9, G-E9a, G-E9b (conteo calibrado con síntesis de piezas)",propuesta
 Pendiente: km o memoria equivalente,sin decidir,"T-E7: sin par de la lista para 400 GBd, 40 km",pendiente con el equipo
 Pendiente: correlación de las PRBS15,sin decidir,08 (señal común) y guía §6; E5: corridas desplazadas y corrida larga,pendiente con el equipo
 Pendiente: RMS común,sin decidir,T-E5 y G-E5,pendiente con el equipo
