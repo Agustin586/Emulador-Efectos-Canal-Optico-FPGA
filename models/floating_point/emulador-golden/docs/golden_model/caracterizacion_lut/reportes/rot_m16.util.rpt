@@ -1,7 +1,7 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version : Vivado v.2024.2 (lin64) Build 5239630 Fri Nov 08 22:34:34 MST 2024
-| Date         : Sun Nov 22 11:51:21 2026
+| Date         : Sun Nov 22 12:44:24 2026
 | Host         : wanda-ASUS-Vivobook-16-M1607KA-M1607KA running 64-bit Ubuntu 26.04.1 LTS
 | Command      : report_utilization -file /home/wanda/Documentos/Fulgor/PROCOM/Emulador-Efectos-Canal-Optico-FPGA/models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rot_m16.util.rpt
 | Design       : rot_const

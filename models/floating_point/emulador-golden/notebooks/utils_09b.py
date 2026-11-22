@@ -271,8 +271,13 @@ def best_mem(opts: dict) -> str:
     return min(frac, key=frac.get)
 
 
-def cd_count(P: int, W_d: int, W_c: int, mcm: bool = False, L: int = L_OS, V: int = V_OS) -> CdCount:
-    """Conteo de la CD: FFT + ×H̄ + IFFT por polarización, más reordenamiento, memoria y bypass."""
+def cd_count(P: int, W_d: int, W_c: int, mcm: bool = False, gen_dsp: bool = False,
+             L: int = L_OS, V: int = V_OS) -> CdCount:
+    """Conteo de la CD: FFT + ×H̄ + IFFT por polarización, más reordenamiento, memoria y bypass.
+
+    gen_dsp: rotadores constantes generales en DSP (D2.3): 3 DSP por rotador, coeficiente
+    fijo en el puerto B, registros dentro del DSP; 0 LUT y 0 FF en el conteo. Los W8 siguen en LUT.
+    """
     Pf = P_FFT[P]
     wr, wi = twiddle_table(W_c)
     rows = []
@@ -288,12 +293,15 @@ def cd_count(P: int, W_d: int, W_c: int, mcm: bool = False, L: int = L_OS, V: in
     lut = {"gen": 0, "w8": 0, "var": 0, "var_w8": 0, "var_triv": 0, "mulj_var": 0}
     ff = dict.fromkeys(lut, 0)
     dsp_var = 0
+    dsp_gen = 0
     c8 = int(wr[512])  # cos(π/4) en <W_c, 1>
     a8 = max(len(csd(c8)) - 1, 0)
     w8_lut = 2 * (W_d + 1) + 2 * a8 * Wp
     for r in rot:
         k = r["clase"]
-        if k == "gen":
+        if k == "gen" and gen_dsp:
+            dsp_gen += 3
+        elif k == "gen":
             (_, m), = r["valores"]
             cr, ci = int(wr[m]), int(wi[m])
             base_r, mcm_r = const_mult_adders(cr, ci)
@@ -316,8 +324,12 @@ def cd_count(P: int, W_d: int, W_c: int, mcm: bool = False, L: int = L_OS, V: in
              "var_w8": "W8 alternantes (W8 + mux de signo)", "var_triv": "triviales alternantes (mux)",
              "mulj_var": "×(−j) alternantes de BF2II (mux)"}
     for k, name in names.items():
-        rows.append({"componente": name, "LUT": nT * lut[k], "FF": nT * ff[k], "DSP": nT * dsp_var if k == "var" else 0,
-                     "nota": ("CSD con MCM simple" if mcm else "CSD sin compartir") if k == "gen" else ""})
+        dsp = nT * dsp_var if k == "var" else (nT * dsp_gen if k == "gen" else 0)
+        note = ""
+        if k == "gen":
+            note = "en DSP: 3 por rotador, coeficiente en el puerto B" if gen_dsp else ("CSD con MCM simple" if mcm else "CSD sin compartir")
+        rows.append({"componente": name + (" (en DSP)" if (k == "gen" and gen_dsp) else ""), "LUT": nT * lut[k],
+                     "FF": nT * ff[k], "DSP": dsp, "nota": note})
     # ×H̄
     rows.append({"componente": "×H̄ (multiplicador complejo, 3 DSP)", "LUT": 0, "FF": 0, "DSP": N_POL * Pf * 3,
                  "nota": f"{Pf} por polarización; registros dentro del DSP"})

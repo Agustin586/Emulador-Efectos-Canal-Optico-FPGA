@@ -1,38 +1,46 @@
 {
   "tarea": "D2.1",
   "notebook": "09_evidencias_cd_isi_72gsps.ipynb",
-  "fecha_utc": "2026-11-22T15:06:23+00:00",
+  "fecha_utc": "2026-11-22T16:00:10+00:00",
   "git": {
-    "commit": "4b6ce2050f77a79db757cb7670ddbc501f6661f9",
+    "commit": "047c330c37a048ae11ceb69e9bc5dcb8ded4f1cb",
     "branch": "wanda_dev",
     "dirty_files": [
       "D \"models/floating_point/emulador-golden/docs/golden_model/Arquitectura de la FFT del bloque de CD \\342\\200\\224 Recomendaci\\303\\263n y especificaci\\303\\263n.pdf\"",
       " M models/floating_point/emulador-golden/docs/golden_model/GUIA_ISI_CD.md",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/add_W14.timing.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/add_W14.util.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/add_W17.timing.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/add_W17.util.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/add_W20.timing.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/add_W20.util.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/bfly_W18.timing.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/bfly_W18.util.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/cmul3.timing.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/cmul3.util.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rot_m16.timing.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rot_m16.util.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rot_m2352.timing.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rot_m2352.util.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rot_m432.timing.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rot_m432.util.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rot_w8.timing.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rot_w8.util.rpt",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/resultados.csv",
+      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/run.tcl",
       " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E8_resumen.csv",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9c_calibracion.csv",
       " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/meta.json",
-      " M models/floating_point/emulador-golden/emulador/config.py",
-      " M models/floating_point/emulador-golden/notebooks/00_escenario_y_convenciones.ipynb",
       " M models/floating_point/emulador-golden/notebooks/05_cuantizacion.ipynb",
       " M models/floating_point/emulador-golden/notebooks/09_evidencias_cd_isi_72gsps.ipynb",
-      " M models/floating_point/emulador-golden/tests/test_config.py",
+      " M models/floating_point/emulador-golden/notebooks/utils_09b.py",
       "?? \"models/floating_point/emulador-golden/docs/golden_model/Arquitectura de la FFT del bloque de CD \\342\\200\\224 Recomendaci\\303\\263n y especificaci\\303\\263n.md\"",
-      "?? models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E10_esquinas.csv",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9_recursos.csv",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9a_sqnr_vs_anchos.csv",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9b_rotadores.csv",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9c_calibracion.csv",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9d_isi_ffa_ordenes.csv",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9e_memorias.csv",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9f_desglose_cd_P48.csv",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9g_lut_cd_vs_anchos_P48.csv",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E10_esquinas_vs_cd_efectiva.png",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E10_esquinas_vs_cd_efectiva.svg",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E9a_recursos_vs_P.png",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E9a_recursos_vs_P.svg",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E9b_lut_cd_vs_anchos_P48.png",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E9b_lut_cd_vs_anchos_P48.svg",
-      "?? models/floating_point/emulador-golden/notebooks/utils_09b.py"
+      "?? models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rotdsp_m2352.timing.rpt",
+      "?? models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rotdsp_m2352.util.rpt",
+      "?? models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rotdsp_m432_W17_12.timing.rpt",
+      "?? models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rotdsp_m432_W17_12.util.rpt",
+      "?? models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/rtl/rot_const_dsp.v",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9h_recursos_generales_en_DSP.csv"
     ]
   },
   "versiones": {
@@ -202,7 +210,12 @@
       "ff": 0.9862637362637363,
       "dsp": 1.0
     },
-    "calibrado_con_sintesis": true
+    "calibrado_con_sintesis": true,
+    "rotador_constante_en_dsp": {
+      "LUT": 0,
+      "FF": 0,
+      "DSP": 3
+    }
   },
   "e10": {
     "esquinas": [
@@ -262,19 +275,19 @@
   },
   "tiempos_s": {
     "E1_s": 0.2,
-    "E2_s": 2.8,
-    "E3_calculo_s": 8.5,
-    "E3_s": 10.5,
+    "E2_s": 3.1,
+    "E3_calculo_s": 8.8,
+    "E3_s": 10.7,
     "E4_s": 0.5,
     "E5_corridas_s": 7.1,
     "E5_larga_s": 5.0,
-    "E5_s": 12.7,
-    "E6_calculo_s": 12.1,
-    "E6_s": 18.8,
-    "E7_s": 0.6,
-    "E9_sqnr_s": 10.5,
-    "E9_s": 12.3,
+    "E5_s": 12.8,
+    "E6_calculo_s": 12.5,
+    "E6_s": 19.3,
+    "E7_s": 0.7,
+    "E9_sqnr_s": 10.3,
+    "E9_s": 12.2,
     "E10_s": 1.2,
-    "total": 60.3
+    "total": 61.4
   }
 }

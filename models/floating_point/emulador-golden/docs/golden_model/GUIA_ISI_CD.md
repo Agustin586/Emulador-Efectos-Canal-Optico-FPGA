@@ -812,6 +812,9 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 - **E10, rango de parámetros de la CD** (decisión 35, propuesta): esquinas del rango con overlap-save (256, 64) contra `cd_reference`. `Scenario` acepta las bandas O y C; con λ en banda C los resultados quedan bit a bit iguales.
 - **Listo cuando:** el notebook corre de principio a fin, `informe.html` está regenerado y `pytest` pasa.
 
+**D2.3 · Variante de la CD con los rotadores constantes generales en DSP** (notebook 09, E9; `cd_count(..., gen_dsp=True)` en `notebooks/utils_09b.py`; pieza `rtl/rot_const_dsp.v` en `caracterizacion_lut/`)
+- 3 DSP por rotador constante general, con el coeficiente fijo en el puerto B; los W8 siguen en LUT. Calibración con la pieza sintetizada fuera de contexto a 2,667 ns (cierra timing). T-E9 de la variante para P = 48, 96 y 192, CD y CD + ISI. Estimación, sin decidir.
+
 ## 4. Checklist
 
 Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en el mismo commit que la completa.
@@ -877,6 +880,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] D1.2 · Notebook 08: ISI con MC pesado por |H<sub>RRC</sub>|² (e), acumulador de la ISI (T5b) y CD entre 10 y 20 km (T1b)
 - [x] D2.1 · Notebook `09_evidencias_cd_isi_72gsps`: evidencias de CD (0 a 800 ps/nm) e ISI a 72 GS/s, con resumen de decisiones propuestas (E8) e `informe.html`
 - [x] D2.2 · Notebook 09: referencias de E1, modelo de recursos E9 (conteo + calibración con síntesis), rango de parámetros de la CD E10 (decisión 35, propuesta) y `Scenario` con bandas O y C
+- [x] D2.3 · Notebook 09: variante de la CD con los rotadores constantes generales en DSP (T-E9 variante), calibrada con `rot_const_dsp` en Vivado
 
 **Cuantización y exportación**
 - [x] C1.1 · Confirmar RFSoC, P, f<sub>clk</sub> y N<sub>max</sub>; actualizar `HardwareParams` y la fila 7 de §1 (dispositivo sin confirmar: queda parametrizado, decisión 7)
