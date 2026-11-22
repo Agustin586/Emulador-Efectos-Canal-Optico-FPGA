@@ -278,7 +278,10 @@ def cd_count(P: int, W_d: int, W_c: int, mcm: bool = False, gen_dsp: bool = Fals
     gen_dsp: rotadores constantes generales en DSP (D2.3): 3 DSP por rotador, coeficiente
     fijo en el puerto B, registros dentro del DSP; 0 LUT y 0 FF en el conteo. Los W8 siguen en LUT.
     """
-    Pf = P_FFT[P]
+    # carriles: un bloque de L − V muestras nuevas cada (L − V)/P ciclos -> L/C carriles
+    # (con (256, 64) da P_FFT; con (128, 32) y P = 48, 128 puntos en 2 ciclos)
+    assert (L - V) % P == 0 and L % ((L - V) // P) == 0, (P, L, V)
+    Pf = L // ((L - V) // P)
     wr, wi = twiddle_table(W_c)
     rows = []
     nT = 2 * N_POL  # FFT e IFFT por polarización
@@ -340,7 +343,7 @@ def cd_count(P: int, W_d: int, W_c: int, mcm: bool = False, gen_dsp: bool = Fals
                  "nota": f"etapas con d >= {Pf}: d = {cross}; 2·d muestras por etapa (estimación)"})
     # reordenamiento
     lin, fin, lout, fout, lam_i, lam_o = reorder_cost(P, Pf, L, V)
-    rows.append({"componente": "reordenamiento de entrada (incluye solapamiento de 64)", "LUT": N_POL * lin, "FF": N_POL * fin,
+    rows.append({"componente": f"reordenamiento de entrada (incluye solapamiento de {V})", "LUT": N_POL * lin, "FF": N_POL * fin,
                  "DSP": 0, "nota": "mux por bit, entrada Q1.15 compleja"})
     rows.append({"componente": "reordenamiento de salida", "LUT": N_POL * lout, "FF": N_POL * fout, "DSP": 0, "nota": ""})
     # latencia (estimación)

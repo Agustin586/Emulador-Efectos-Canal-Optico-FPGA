@@ -1,0 +1,12 @@
+perfil,B / Rs,K t=0.01,K t=0.02,K t=0.03,K t=0.05
+gaussiano,0.3,5,3,3,3
+gaussiano,0.4,5,3,3,3
+gaussiano,0.5,5,3,3,3
+Bessel m=4,0.3,6,4,2,2
+Bessel m=4,0.4,5,4,3,3
+Bessel m=4,0.5,11,8,6,4
+Butterworth m=4,0.3,9,7,6,5
+Butterworth m=4,0.4,9,5,5,3
+Butterworth m=4,0.5,8,6,5,4
+"peor, B ≤ 0.4·Rs",,9,7,6,5
+"peor, B ≤ 0.5·Rs",,11,8,6,5
