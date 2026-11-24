@@ -108,7 +108,7 @@ def _rot_class(e: int, M: int):
     return ("gen", m * (4096 // M))
 
 
-def lane_rotators(L: int, P: int) -> list[dict]:
+def lane_rotators(L: int, P: int, legacy_r2: bool = False) -> list[dict]:
     """Rotadores por carril para el plegado x[i + P·c] -> carril i, ciclo c (bits de ciclo = MSB).
 
     Para cada etapa con rotación y cada carril, la clase según los valores que
@@ -119,6 +119,10 @@ def lane_rotators(L: int, P: int) -> list[dict]:
       var                : alterna e incluye un valor general (multiplicador variable).
     También cuenta los ×(−j) de BF2II (``mulj``: constante o alternante).
     Devuelve una lista de {etapa, M, carril, clase, valores}.
+
+    Las posiciones sin rotación de la R2 (e = −1 en ``twiddle_exponents``) cuentan
+    como 1 (D2.9). legacy_r2=True reproduce el conteo anterior (D2.2 a D2.8), que las
+    tomaba como W_L^(L−1): los carriles de la R2 quedaban variables (L = 128).
     """
     C = L // P
     out = []
@@ -134,6 +138,8 @@ def lane_rotators(L: int, P: int) -> list[dict]:
         e = twiddle_exponents(st, L)
         if e is None:
             continue
+        if not legacy_r2:
+            e = np.where(e < 0, 0, e)
         for i in range(P):
             vals = {_rot_class(int(e[i + P * c]), st.M) for c in range(C)}
             if len(vals) == 1:
@@ -150,10 +156,10 @@ def lane_rotators(L: int, P: int) -> list[dict]:
     return out
 
 
-def rotator_counts(L: int, P: int) -> dict:
+def rotator_counts(L: int, P: int, legacy_r2: bool = False) -> dict:
     """Conteo por transformada: variables, generales, W8 (constantes + alternantes) y triviales."""
     c = {}
-    for r in lane_rotators(L, P):
+    for r in lane_rotators(L, P, legacy_r2):
         c[r["clase"]] = c.get(r["clase"], 0) + 1
     c["W8 total"] = c.get("w8", 0) + c.get("var_w8", 0)
     return c
@@ -272,7 +278,7 @@ def best_mem(opts: dict) -> str:
 
 
 def cd_count(P: int, W_d: int, W_c: int, mcm: bool = False, gen_dsp: bool = False,
-             L: int = L_OS, V: int = V_OS) -> CdCount:
+             L: int = L_OS, V: int = V_OS, legacy_r2: bool = False) -> CdCount:
     """Conteo de la CD: FFT + ×H̄ + IFFT por polarización, más reordenamiento, memoria y bypass.
 
     gen_dsp: rotadores constantes generales en DSP (D2.3): 3 DSP por rotador, coeficiente
@@ -291,7 +297,7 @@ def cd_count(P: int, W_d: int, W_c: int, mcm: bool = False, gen_dsp: bool = Fals
                  "FF": nT * n_st * Pf * 2 * W_d, "DSP": 0,
                  "nota": f"2·{Pf} sumadores reales de {W_d + 1} bits por etapa, {n_st} etapas, {nT} transformadas"})
     # rotadores
-    rot = lane_rotators(L, Pf)
+    rot = lane_rotators(L, Pf, legacy_r2)
     Wp = W_d + W_c - 1  # ancho de los sumadores de un producto por constante
     lut = {"gen": 0, "w8": 0, "var": 0, "var_w8": 0, "var_triv": 0, "mulj_var": 0}
     ff = dict.fromkeys(lut, 0)

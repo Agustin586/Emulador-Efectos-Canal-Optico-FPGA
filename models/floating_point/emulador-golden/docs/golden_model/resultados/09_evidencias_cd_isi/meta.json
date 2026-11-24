@@ -1,24 +1,31 @@
 {
   "tarea": "D2.1",
   "notebook": "09_evidencias_cd_isi_72gsps.ipynb",
-  "fecha_utc": "2026-11-24T14:28:58+00:00",
+  "fecha_utc": "2026-11-24T15:04:17+00:00",
   "git": {
-    "commit": "54090e862eed4fabdb323dfba9c37c3645dfbebd",
+    "commit": "d03ba90c3e3f929a46785185f5b7fe24f09facd2",
     "branch": "wanda_dev",
     "dirty_files": [
       "D \"models/floating_point/emulador-golden/docs/golden_model/Arquitectura de la FFT del bloque de CD \\342\\200\\224 Recomendaci\\303\\263n y especificaci\\303\\263n.pdf\"",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E11_configuracion_por_tolerancia.csv",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E11_todas_las_que_cumplen.csv",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E11c_recursos_cd_128_32.csv",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E13_descomposiciones.csv",
       " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E8_resumen.csv",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E13_descomposiciones_dsp_lut.png",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E13_descomposiciones_dsp_lut.svg",
       " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/meta.json",
       " M models/floating_point/emulador-golden/notebooks/05_cuantizacion.ipynb",
       " M models/floating_point/emulador-golden/notebooks/09_evidencias_cd_isi_72gsps.ipynb",
+      " M models/floating_point/emulador-golden/notebooks/utils_09b.py",
+      " M models/floating_point/emulador-golden/notebooks/utils_09c.py",
       "?? \"models/floating_point/emulador-golden/docs/golden_model/Arquitectura de la FFT del bloque de CD \\342\\200\\224 Recomendaci\\303\\263n y especificaci\\303\\263n.md\"",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E13_descomposiciones.csv",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E13a_verificacion_flotante.csv",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E13b_rotadores_por_transformada.csv",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E13c_w16_en_lut.csv",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E13_descomposiciones_dsp_lut.png",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E13_descomposiciones_dsp_lut.svg",
-      "?? models/floating_point/emulador-golden/notebooks/utils_09c.py"
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E14_p96.csv",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E14b_fusion_cd_isi.csv",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E14c_isi_ffa_p96.csv",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E14d_rotadores_128_carriles.csv",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E14_p96_opciones.png",
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E14_p96_opciones.svg"
     ]
   },
   "versiones": {
@@ -377,24 +384,50 @@
     },
     "criterio_constante": "un solo valor no trivial por carril, aunque alterne con 1 o con un trivial"
   },
+  "e14": {
+    "P": 96,
+    "os": [
+      128,
+      32
+    ],
+    "isi_elegida": {
+      "radix-2²": {
+        "a": 2,
+        "b": 1,
+        "orden": "2-2-3"
+      },
+      "2³·2⁴": {
+        "a": 2,
+        "b": 1,
+        "orden": "2-2-3"
+      }
+    },
+    "criterio": {
+      "DSP": 3417.6000000000004,
+      "LUT": 297696.0,
+      "FF": 595392.0
+    },
+    "fusion_ref": "cd_reference + perfil sin truncar (h_reference), retardo = centroide"
+  },
   "tiempos_s": {
     "E1_s": 0.1,
     "E2_s": 1.2,
-    "E3_calculo_s": 4.7,
-    "E3_s": 5.5,
+    "E3_calculo_s": 5.1,
+    "E3_s": 5.9,
     "E4_s": 0.3,
     "E5_corridas_s": 3.0,
     "E5_larga_s": 2.0,
-    "E5_s": 5.2,
-    "E6_calculo_s": 5.1,
-    "E6_s": 7.9,
+    "E5_s": 5.3,
+    "E6_calculo_s": 5.3,
+    "E6_s": 8.1,
     "E7_s": 0.3,
-    "E9_sqnr_s": 4.1,
-    "E9_s": 4.9,
+    "E9_sqnr_s": 4.2,
+    "E9_s": 5.0,
     "E10_s": 0.5,
-    "E11_s": 0.4,
+    "E11_s": 0.5,
     "E12_s": 1.1,
     "E13_s": 1.0,
-    "total": 28.7
+    "E14_s": 1.4,
+    "total": 31.0
   }
 }

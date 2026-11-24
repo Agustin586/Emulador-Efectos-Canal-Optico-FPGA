@@ -1,0 +1,5 @@
+FFT,P_FFT,constantes generales,con mux,variables,W8 (const. / mux),W16 (generales),rotadores en DSP
+radix-2²,64,116,63,0,20 / 2,28,116
+radix-2²,128,172,0,0,42 / 0,52,172
+2³·2⁴,64,32,108,44,16 / 32,18,76
+2³·2⁴,128,132,0,0,68 / 0,44,132

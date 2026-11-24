@@ -1,4 +1,4 @@
-"""Utilidades de E13 del notebook 09 (tarea D2.8): descomposiciones radix-2^k de la FFT de L = 128.
+"""Utilidades de E13 (D2.8) y E14 (D2.9) del notebook 09: descomposiciones radix-2^k de la FFT de L = 128, P = 96 y fusión CD + ISI.
 
 NO es parte del núcleo ni lo modifica. Reutiliza la aritmética de
 ``emulador.fixed_point.cd_fft`` (mariposa, rotación y tablas) y el modelo de
@@ -436,7 +436,7 @@ def legacy_r2_lanes(L: int = L13, Pf: int = PF13) -> dict:
     dos valores no triviales y cuenta como variable. Con e = −1 como 1, la clase es
     la de ``lane_class``.
     """
-    rows = [r for r in ub.lane_rotators(L, Pf) if r["etapa"] == 0]
+    rows = [r for r in ub.lane_rotators(L, Pf, legacy_r2=True) if r["etapa"] == 0]
     E = boundary_exponents(L, DECOMPS[BASE13])
     out = {}
     for r in rows:
@@ -444,3 +444,76 @@ def legacy_r2_lanes(L: int = L13, Pf: int = PF13) -> dict:
         k = lane_class(tuple(int(E[0, i + Pf * c]) for c in range(L // Pf)), L)
         out[(r["clase"], k)] = out.get((r["clase"], k), 0) + 1
     return out
+
+
+# --------------------------------------------------------------------------
+# E14 (D2.9): P = 96, ISI FFA y fusión CD + ISI
+# --------------------------------------------------------------------------
+import utils_08 as u8  # noqa: E402
+import utils_09 as u9  # noqa: E402
+from scipy.signal import fftconvolve  # noqa: E402
+
+N_CH_ISI = 4
+CRIT_ABS = {k: ub.CRIT[k] * ub.DEVICE[k] for k in ("DSP", "LUT", "FF")}
+
+
+def occupancy(v: dict) -> float:
+    """Ocupación relativa al criterio de diseño: max(%DSP/80, %LUT/70, %FF/70)."""
+    return max(v[k] / CRIT_ABS[k] for k in CRIT_ABS)
+
+
+def free(v: dict) -> dict:
+    """Lo que queda hasta el criterio de diseño (negativo: se pasa)."""
+    return {k: CRIT_ABS[k] - v[k] for k in CRIT_ABS}
+
+
+def isi_options(P: int, K: dict, K_isi: int = 12) -> list[dict]:
+    """ISI FFA de K_isi coeficientes, 4 canales reales: todas las combinaciones (a niveles de 2, b de 3) y órdenes.
+
+    Mismo modelo calibrado que ``isi_totals`` del notebook 09 (E9). Cada fila tiene el error
+    de la estructura contra la convolución directa.
+    """
+    out = []
+    for a in range(u8._vp(P, 2) + 1):
+        for b in range(u8._vp(P, 3) + 1):
+            for order, (t, err) in ub.isi_ffa(P, K_isi, a, b).items():
+                adds = sum(t.pre) + sum(t.post)
+                out.append({"a": a, "b": b, "orden": order or "directa", "multiplicadores/canal": t.mults,
+                            "DSP": N_CH_ISI * t.mults * K["dsp"], "LUT": N_CH_ISI * adds * K["add"],
+                            "FF": N_CH_ISI * (adds + t.coefs * 18) * K["ff"], "error": err})
+    return out
+
+
+def best_isi_for(cd: dict, opts: list[dict]) -> dict:
+    """La opción de ISI que deja CD + ISI con la menor ocupación relativa al criterio."""
+    return min(opts, key=lambda o: occupancy({k: cd[k] + o[k] for k in CRIT_ABS}))
+
+
+def isi_delay(h: np.ndarray) -> int:
+    """Centroide de energía del prototipo (muestras): retardo con el que se compara la salida de la ISI."""
+    e = np.abs(h) ** 2
+    return int(round(float(np.sum(np.arange(h.size) * e) / e.sum())))
+
+
+def fused_hbar(L: int, V: int, cd_ps_nm: float, kind: str, m, B_rel: float) -> tuple[np.ndarray, int]:
+    """H̄ = H_CD·H_ISI·exp(−j2πk(V/2)/L) en la grilla de L puntos, con el perfil sin truncar adelantado su centroide.
+
+    H_ISI sale de la FFT de ``utils_08.h_reference`` (8192 coeficientes) en uno de cada
+    8192/L bins: es la respuesta del perfil, sin el FIR de K coeficientes.
+    """
+    h = u8.h_reference(kind, m, B_rel)
+    D = isi_delay(h)
+    k = np.arange(L)
+    H_isi = np.fft.fft(h)[:: h.size // L] * np.exp(2j * np.pi * k * D / L)
+    return u9.os_hbar(L, V, cd_ps_nm) * H_isi, D
+
+
+def fused_nrmse(x: np.ndarray, L: int, V: int, cd_ps_nm: float, kind: str, m, B_rel: float, sl) -> float:
+    """NRMSE del overlap-save fusionado contra la CD con FFT de toda la señal seguida del perfil sin truncar."""
+    Hb, D = fused_hbar(L, V, cd_ps_nm, kind, m, B_rel)
+    n = x.size
+    h = u8.h_reference(kind, m, B_rel)
+    ref = fftconvolve(u9.cd_ref(x, cd_ps_nm), h)[D : D + n]
+    y = u9.os_apply(np.pad(x, (0, V // 2)), Hb, V)[V // 2 : V // 2 + n]
+    from emulador.metrics import nrmse
+    return float(nrmse(y[sl], ref[sl]))
