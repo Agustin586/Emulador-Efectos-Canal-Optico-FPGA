@@ -1,6 +1,6 @@
 opción,ISI,DSP,% DSP,LUT,% LUT,FF,% FF,cumple el criterio,ocupación / criterio,libre DSP,libre LUT,libre FF
-P = 48 vigente (referencia): CD radix-2² + ISI 2-2-3,separadas,2640,61.8,167283,39.3,166450,19.6,True,0.772,778,130413,428942
-a. CD radix-2² + ISI separadas,ISI 2-2-3,4560,106.7,302333,71.1,295595,34.8,False,1.334,-1142,-4637,299797
-b. CD 2³·2⁴ + ISI separadas,ISI 2-2-3,4080,95.5,317763,74.7,299083,35.2,False,1.194,-662,-20067,296309
-"c. CD + ISI fusionadas, radix-2²",un H̄,2832,66.3,154183,36.3,137052,16.1,True,0.829,586,143513,458340
-"d. CD + ISI fusionadas, 2³·2⁴",un H̄,2352,55.1,169614,39.9,140539,16.5,True,0.688,1066,128082,454853
+P = 48 vigente (referencia): CD radix-2² + ISI 2-2-3,separadas,2640,61.8,170943,40.2,167199,19.7,True,0.772,778,126753,428193
+a. CD radix-2² + ISI separadas,ISI 2-2-3,4560,106.7,309327,72.7,295595,34.8,False,1.334,-1142,-11631,299797
+b. CD 2³·2⁴ + ISI separadas,ISI 2-2-3,4080,95.5,329087,77.4,299083,35.2,False,1.194,-662,-31391,296309
+"c. CD + ISI fusionadas, radix-2²",un H̄,2832,66.3,161177,37.9,137052,16.1,True,0.829,586,136519,458340
+"d. CD + ISI fusionadas, 2³·2⁴",un H̄,2352,55.1,180937,42.5,140539,16.5,True,0.688,1066,116759,454853

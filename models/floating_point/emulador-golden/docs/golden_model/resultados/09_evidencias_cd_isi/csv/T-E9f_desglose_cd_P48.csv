@@ -1,9 +1,9 @@
 componente,LUT conteo,LUT conteo MCM,LUT calibrado,LUT calibrado MCM,FF conteo,DSP,nota
 sumadores de mariposa,73728,73728,69847.6,69847.6,69632,0,"2·64 sumadores reales de 18 bits por etapa, 8 etapas, 4 transformadas"
 rotadores constantes generales,86016,86016,76443.7,82106.2,7616,0,CSD sin compartir
-rotadores W8,20800,20800,11869.6,11869.6,2720,0,
+rotadores W8,20800,20800,15200,15200,2720,0,
 rotadores variables (3 DSP),5952,5952,5952,5952,0,744,
-W8 alternantes (W8 + mux de signo),1176,1176,671.087,671.087,136,0,
+W8 alternantes (W8 + mux de signo),1176,1176,836,836,516,0,
 triviales alternantes (mux),0,0,0,0,0,0,
 ×(−j) alternantes de BF2II (mux),8704,8704,8704,8704,0,0,
 "×H̄ (multiplicador complejo, 3 DSP)",0,0,0,0,0,384,64 por polarización; registros dentro del DSP

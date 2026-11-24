@@ -310,14 +310,15 @@ def split_radix_ops(N: int) -> dict:
 # --------------------------------------------------------------------------
 # Recursos (mismo modelo que utils_09b.cd_count con gen_dsp=True)
 # --------------------------------------------------------------------------
-def cd_count_decomp(P: int, W_d: int, W_c: int, groups, L: int = L13, V: int = V13, w16_lut: bool = False) -> ub.CdCount:
+def cd_count_decomp(P: int, W_d: int, W_c: int, groups, L: int = L13, V: int = V13, w16_lut: bool = False,
+                    w8mux_reg: bool = True) -> ub.CdCount:
     """Conteo de la CD (overlap-save, 2 polarizaciones) con la descomposición ``groups``.
 
     Igual que ``utils_09b.cd_count(..., gen_dsp=True)`` salvo los rotadores, que salen de
     ``lane_table``. w16_lut: los generales W16 constantes en LUT (CSD sin compartir; pieza
     sin caracterizar), en lugar de DSP.
     """
-    base = ub.cd_count(P, W_d, W_c, gen_dsp=True, L=L, V=V)
+    base = ub.cd_count(P, W_d, W_c, gen_dsp=True, L=L, V=V, w8mux_reg=w8mux_reg)
     Pf = L // ((L - V) // P)
     nT = 2 * ub.N_POL
     wr, wi = twiddle_table(W_c)
@@ -346,7 +347,7 @@ def cd_count_decomp(P: int, W_d: int, W_c: int, groups, L: int = L13, V: int = V
             acc[k]["FF"] += 2 * W_d
         elif k in ("w8_mux", "var_w8"):
             acc[k]["LUT"] += w8_lut + 2 * W_d
-            acc[k]["FF"] += 2 * W_d
+            acc[k]["FF"] += 2 * W_d + (ub.w8mux_reg_ff(W_d, W_c) if w8mux_reg else 0)  # D2.10: registro intermedio
         elif k == "triv_mux":
             acc[k]["LUT"] += 2 * W_d
         else:
@@ -392,7 +393,7 @@ def cd_count_decomp(P: int, W_d: int, W_c: int, groups, L: int = L13, V: int = V
 
 
 KCOMP = {"sumadores de mariposa": "bfly", "rotadores constantes generales": "rot", "rotadores W8": "w8",
-         "W8 alternantes (W8 + mux de signo)": "w8", "W8 variables (W8 + mux)": "w8"}
+         "W8 alternantes (W8 + mux de signo)": "w8 mux", "W8 variables (W8 + mux)": "w8 mux"}  # D2.10
 
 
 def calibrated(c: ub.CdCount, K: dict, ROTDSP: dict, calib: bool = True) -> dict:
@@ -407,7 +408,7 @@ def calibrated(c: ub.CdCount, K: dict, ROTDSP: dict, calib: bool = True) -> dict
                 dsp += r["DSP"]
             continue
         k = KCOMP.get(r["componente"])
-        kl = K.get(k, 1.0) if (calib and k) else 1.0
+        kl = K.get(k, K.get("w8", 1.0) if k.startswith("w8") else 1.0) if (calib and k) else 1.0
         lut += r["LUT"] * kl
         ff += r["FF"] * (K["ff"] if calib else 1.0)
         dsp += r["DSP"] * (K["dsp"] if calib else 1.0)

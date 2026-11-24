@@ -1,0 +1,4 @@
+pieza,parámetros,LUT síntesis,LUT conteo,LUT conteo MCM,FF síntesis,FF conteo,DSP síntesis,DSP conteo,CARRY8,WNS ns
+rot_w8,WD 18 WC 16 K 23170,210,368,368,104,106,0,0,38,0.081
+rot_w8_W17_12,WD 17 WC 12 K 1448,190,260,260,88,94,0,0,34,0.015
+rot_w8mux_W17_12,WD 17 WC 12 K 1448,209,294,294,89,95,0,0,34,-0.307

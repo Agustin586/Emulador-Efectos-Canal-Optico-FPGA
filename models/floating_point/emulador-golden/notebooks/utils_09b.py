@@ -277,8 +277,17 @@ def best_mem(opts: dict) -> str:
     return min(frac, key=frac.get)
 
 
+def w8mux_reg_ff(W_d: int, W_c: int) -> int:
+    """FF del registro intermedio del W8 con multiplexor (D2.10): producto (2·(W_d + W_c + 1)) + a, b y sel retardados.
+
+    La pieza ``rot_w8_mux`` a (17, 12) no cierra 375 MHz en una etapa (WNS −0,307 ns);
+    con un registro entre el producto por K y el multiplexor, cada lado queda como el W8 constante.
+    """
+    return 2 * (W_d + W_c + 1) + 2 * W_d + 1
+
+
 def cd_count(P: int, W_d: int, W_c: int, mcm: bool = False, gen_dsp: bool = False,
-             L: int = L_OS, V: int = V_OS, legacy_r2: bool = False) -> CdCount:
+             L: int = L_OS, V: int = V_OS, legacy_r2: bool = False, w8mux_reg: bool = True) -> CdCount:
     """Conteo de la CD: FFT + ×H̄ + IFFT por polarización, más reordenamiento, memoria y bypass.
 
     gen_dsp: rotadores constantes generales en DSP (D2.3): 3 DSP por rotador, coeficiente
@@ -326,7 +335,7 @@ def cd_count(P: int, W_d: int, W_c: int, mcm: bool = False, gen_dsp: bool = Fals
             lut[k] += 2 * W_c  # tabla de coeficientes alternantes indexada por el ciclo (LUT6 = 64 × 1)
         elif k == "var_w8":
             lut[k] += w8_lut + 2 * W_d
-            ff[k] += 2 * W_d
+            ff[k] += 2 * W_d + (w8mux_reg_ff(W_d, W_c) if w8mux_reg else 0)
         elif k in ("var_triv", "mulj_var"):
             lut[k] += 2 * W_d  # intercambio re/im; el signo va al sumador siguiente (suma/resta)
     names = {"gen": "rotadores constantes generales", "w8": "rotadores W8", "var": "rotadores variables (3 DSP)",

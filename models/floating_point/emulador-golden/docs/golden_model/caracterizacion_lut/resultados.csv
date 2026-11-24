@@ -10,3 +10,5 @@ rot_w8,rot_w8,"WD 18 WC 16 K 23170",210,104,0,38,0.081
 cmul3,cmul3,"WD 18 WC 18",0,0,3,0,1.119
 rotdsp_m2352,rot_const_dsp,"WD 18 WC 16 C -29269 S 14733",0,0,3,0,1.196
 rotdsp_m432_W17_12,rot_const_dsp,"WD 17 WC 12 C 1615 S -1260",0,0,3,0,1.196
+rot_w8_W17_12,rot_w8,"WD 17 WC 12 K 1448",190,88,0,34,0.015
+rot_w8mux_W17_12,rot_w8_mux,"WD 17 WC 12 K 1448",209,89,0,34,-0.307

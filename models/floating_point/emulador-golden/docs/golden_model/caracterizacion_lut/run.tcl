@@ -1,4 +1,4 @@
-# Caracterización de costos por pieza (D2.2). Uso:
+# Caracterización de costos por pieza (D2.2; W8 a (17, 12) en D2.10). Uso:
 #   /tools/Xilinx/Vivado/2024.2/bin/vivado -mode batch -nojournal -nolog -source run.tcl
 # Síntesis + place & route fuera de contexto, xczu48dr-fsvg1517-2-e, reloj de 2,667 ns (375 MHz).
 set part xczu48dr-fsvg1517-2-e
@@ -15,6 +15,8 @@ set cases {
     {cmul3     cmul3     {WD 18 WC 18}}
     {rotdsp_m2352      rot_const_dsp {WD 18 WC 16 C -29269 S 14733}}
     {rotdsp_m432_W17_12 rot_const_dsp {WD 17 WC 12 C 1615 S -1260}}
+    {rot_w8_W17_12     rot_w8     {WD 17 WC 12 K 1448}}
+    {rot_w8mux_W17_12  rot_w8_mux {WD 17 WC 12 K 1448}}
 }
 proc util {rpt label} {
     if {[regexp -line [format {^\|\s*%s\s*\|\s*(\d+)} $label] $rpt -> v]} { return $v }
