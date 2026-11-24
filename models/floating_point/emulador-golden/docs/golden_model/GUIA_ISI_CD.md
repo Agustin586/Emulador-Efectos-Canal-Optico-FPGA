@@ -833,6 +833,11 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 **D2.7 · Criterio de punto fijo como SQNR** (solo guía)
 - Decisión 27: el error de punto fijo de la ISI y de la CD se expresa como SQNR ≥ 60 dB por bloque contra la salida en flotante (documento común), equivalente a NRMSE ≤ 1e-3; no se confunde con la tolerancia del modelo (1e-2).
 
+**D2.8 · Descomposiciones radix-2<sup>k</sup> de la FFT de L = 128 con 64 carriles** (estudio, sin cambiar la decisión 36; notebook 09, E13; `notebooks/utils_09c.py`; sin Vivado ni cambios en el núcleo)
+- Compara radix-2, radix-2² vigente, radix-2³ (2³·2³·2 y 2·2³·2³) y radix-2⁴ (2⁴·2³ y 2³·2⁴), siempre FFT DIF → ×H̄ → IFFT DIT sin reordenar. Split-radix solo como referencia de conteo. Todas dan orden bit invertido y se verifican en flotante contra `np.fft.fft` (error ≤ 4e-16). La radix-2² es bit a bit igual al núcleo.
+- Conteo por carril con el criterio "un solo valor no trivial (con multiplexor contra 1) = constante". El conteo de E11 / decisión 36 tomaba como variables los 64 carriles de la R2, porque `lane_rotators` trata e = −1 (sin rotación) como W<sup>127</sup>. Con el criterio de la tarea, la radix-2² da 1776 DSP y 93 208 LUT, contra 1824 y 92 114. La decisión 36 no cambia.
+- Resultado (T-E13, G-E13, P = 48, calibrado): 2³·2³·2 y 2³·2⁴ bajan a 1296 DSP (−480), con +24 547 y +19 799 LUT, 44 rotadores variables por transformada y más multiplexores. Todas cumplen 60 dB con (17, 12): de 66,8 a 68,4 dB. Las piezas sin caracterizar (W8 con multiplexor a (17, 12), variable con tabla de 2 coeficientes, W16 constante en LUT) quedan propuestas para sintetizar.
+
 ## 4. Checklist
 
 Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en el mismo commit que la completa.
@@ -903,6 +908,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] D2.5 · Guía §1: rango de la CD 0 a 200 ps/nm y overlap-save (128, 32) decididos con el equipo (filas 35 y 36), fusión CD + ISI propuesta (fila 37); notebook 09, E12 (esquinas de 10 km con (128, 32))
 - [x] D2.6 · Guía: tolerancia 1e-2 adoptada, objetivo 1e-3 descartado (decisión 27); paso a golden flotante y punto fijo como pendiente
 - [x] D2.7 · Guía: criterio de punto fijo expresado como SQNR ≥ 60 dB del documento común (decisión 27, ISI y CD)
+- [x] D2.8 · Notebook 09: E13, comparación de descomposiciones radix-2^k para L = 128 con 64 carriles (estudio, sin cambiar la decisión 36)
 
 **Por hacer (no implementar hasta que el equipo decida RMS común, P y carga de parámetros)**
 - [ ] a · Pasar las decisiones 35 y 36 al núcleo del golden en flotante: `cd_overlap_save` y `cd_fft.py` con V = L/4, (L, V) = (128, 32) y validación de CD efectiva \|D\|·z·(λ/1550 nm)² ≤ 200 ps/nm.

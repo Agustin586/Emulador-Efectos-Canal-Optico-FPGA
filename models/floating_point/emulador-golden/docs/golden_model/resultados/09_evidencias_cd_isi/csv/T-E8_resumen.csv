@@ -13,6 +13,7 @@ Rango de parámetros de la CD (G.652.D),"z 0–10 km; λ banda O o C; D −3,5 a
 Recursos CD + ISI (estimación),"P = 48: 266209 LUT (MCM, calibrado), 1992 DSP","T-E9, G-E9a, G-E9b (conteo calibrado con síntesis de piezas)",propuesta
 "Recursos CD + ISI, rotadores generales en DSP (estimación, D2.3)","P = 48: 184103 LUT, 2664 DSP (calibrado)",T-E9 variante D2.3,propuesta
 Tolerancia del error del método (D2.4),"1e-2 (propuesta, Jiang et al. 2026)","T-E11a a T-E11d y T-E11: alcance de la CD, K de la ISI, recursos y pérdida de SNR para t = 1e-2 a 5e-2",pendiente con el equipo
+"Descomposición de la FFT/IFFT de 128 (D2.8, estudio)","radix-2² vigente (decisión 36, sin cambios)","T-E13, G-E13: radix-2² 1776 DSP / 93208 LUT; menor DSP: 2³·2⁴ 1296 DSP / 113007 LUT; todas ≥ 60 dB con (17, 12)","estudio, sin decidir"
 Fusión de CD e ISI al integrar,un solo bloque en frecuencia,sin evidencia en este notebook (fila 37 de §1),"propuesta, pendiente de feedback del equipo"
 Pendiente: km o memoria equivalente,sin decidir,"T-E7: sin par de la lista para 400 GBd, 40 km",pendiente con el equipo
 Pendiente: correlación de las PRBS15,sin decidir,08 (señal común) y guía §6; E5: corridas desplazadas y corrida larga,pendiente con el equipo

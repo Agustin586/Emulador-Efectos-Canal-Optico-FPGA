@@ -1,0 +1,20 @@
+descomposición,bloque,triviales (const. / mux),W8 (const. / mux / var.),constantes generales (DSP),de ellos con mux contra 1 o trivial,de ellos W16,variables con general (DSP),rotadores en DSP,mariposas radix-2,sumadores reales,fronteras con rotación no trivial,ops. sin plegar W8 / generales (W16)
+radix-2,FFT,31 / 1,30 / 2 / 0,128,60,32,0,128,224,896,5,62 / 196 (60)
+radix-2,IFFT,31 / 1,30 / 2 / 0,128,60,32,0,128,224,896,5,62 / 196 (60)
+radix-2,×H̄,,,,,,64,64,0,0,,
+radix-2² (vigente),FFT,53 / 1,20 / 2 / 0,116,60,28,0,116,224,896,3,42 / 172 (52)
+radix-2² (vigente),IFFT,53 / 1,20 / 2 / 0,116,60,28,0,116,224,896,3,42 / 172 (52)
+radix-2² (vigente),×H̄,,,,,,64,64,0,0,,
+radix-2³ (2³·2³·2),FFT,44 / 16,24 / 32 / 0,32,16,18,44,76,224,896,4,84 / 132 (44)
+radix-2³ (2³·2³·2),IFFT,44 / 16,24 / 32 / 0,32,16,18,44,76,224,896,4,84 / 132 (44)
+radix-2³ (2³·2³·2),×H̄,,,,,,64,64,0,0,,
+radix-2³ (2·2³·2³),FFT,49 / 1,36 / 2 / 0,104,60,16,0,104,224,896,4,74 / 148 (28)
+radix-2³ (2·2³·2³),IFFT,49 / 1,36 / 2 / 0,104,60,16,0,104,224,896,4,74 / 148 (28)
+radix-2³ (2·2³·2³),×H̄,,,,,,64,64,0,0,,
+radix-2⁴ (2⁴·2³),FFT,40 / 32,16 / 16 / 0,24,24,16,64,88,224,896,3,68 / 132 (44)
+radix-2⁴ (2⁴·2³),IFFT,40 / 32,16 / 16 / 0,24,24,16,64,88,224,896,3,68 / 132 (44)
+radix-2⁴ (2⁴·2³),×H̄,,,,,,64,64,0,0,,
+radix-2⁴ (2³·2⁴),FFT,52 / 16,16 / 32 / 0,32,16,18,44,76,224,896,3,68 / 132 (44)
+radix-2⁴ (2³·2⁴),IFFT,52 / 16,16 / 32 / 0,32,16,18,44,76,224,896,3,68 / 132 (44)
+radix-2⁴ (2³·2⁴),×H̄,,,,,,64,64,0,0,,
+"split-radix (referencia, sin implementar)",FFT,,,,,,,≥ 72 (cota: 2 ops por carril y bloque),,,,42 / 144 (40)
