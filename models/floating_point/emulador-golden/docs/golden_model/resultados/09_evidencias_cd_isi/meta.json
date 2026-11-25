@@ -1,44 +1,39 @@
 {
   "tarea": "D2.1",
   "notebook": "09_evidencias_cd_isi_72gsps.ipynb",
-  "fecha_utc": "2026-11-24T15:42:49+00:00",
+  "fecha_utc": "2026-11-25T01:42:17+00:00",
   "git": {
-    "commit": "a8f8678107b0f88b0f7a492e62c955f496d85e0f",
+    "commit": "1dfcae6b953ee71efe4d006e6794114a140749b6",
     "branch": "wanda_dev",
     "dirty_files": [
       "D \"models/floating_point/emulador-golden/docs/golden_model/Arquitectura de la FFT del bloque de CD \\342\\200\\224 Recomendaci\\303\\263n y especificaci\\303\\263n.pdf\"",
-      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/resultados.csv",
-      " M models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/run.tcl",
-      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E11_configuracion_por_tolerancia.csv",
-      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E11_todas_las_que_cumplen.csv",
-      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E11c_recursos_cd_128_32.csv",
-      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E13_descomposiciones.csv",
-      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E13c_w16_en_lut.csv",
       " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E14_p96.csv",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E4_dsp_primer_orden_y_os.csv",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E5_cd_peor_caso.csv",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E5_rango_q115_todas.csv",
       " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E8_resumen.csv",
-      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9_recursos.csv",
-      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9c_calibracion.csv",
-      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9f_desglose_cd_P48.csv",
-      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9h_recursos_generales_en_DSP.csv",
-      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E13_descomposiciones_dsp_lut.png",
-      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E13_descomposiciones_dsp_lut.svg",
-      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E14_p96_opciones.png",
-      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E14_p96_opciones.svg",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E10_esquinas_vs_cd_efectiva.png",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E10_esquinas_vs_cd_efectiva.svg",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E12a_esquinas_10km_128_32.png",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E12a_esquinas_10km_128_32.svg",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E3a_nrmse_vs_cd.png",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E3a_nrmse_vs_cd.svg",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E3d_error_frecuencia_os.png",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E3d_error_frecuencia_os.svg",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E4_dsp_vs_cd_P48.png",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E4_dsp_vs_cd_P48.svg",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E6c_modulo_retardo_K12.png",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E6c_modulo_retardo_K12.svg",
       " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E9a_recursos_vs_P.png",
       " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E9a_recursos_vs_P.svg",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E9b_lut_cd_vs_anchos_P48.png",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/fig/G-E9b_lut_cd_vs_anchos_P48.svg",
+      " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/informe.html",
       " M models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/meta.json",
       " M models/floating_point/emulador-golden/notebooks/05_cuantizacion.ipynb",
       " M models/floating_point/emulador-golden/notebooks/09_evidencias_cd_isi_72gsps.ipynb",
-      " M models/floating_point/emulador-golden/notebooks/utils_09b.py",
-      " M models/floating_point/emulador-golden/notebooks/utils_09c.py",
       "?? \"models/floating_point/emulador-golden/docs/golden_model/Arquitectura de la FFT del bloque de CD \\342\\200\\224 Recomendaci\\303\\263n y especificaci\\303\\263n.md\"",
-      "?? models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rot_w8_W17_12.timing.rpt",
-      "?? models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rot_w8_W17_12.util.rpt",
-      "?? models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rot_w8mux_W17_12.timing.rpt",
-      "?? models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/reportes/rot_w8mux_W17_12.util.rpt",
-      "?? models/floating_point/emulador-golden/docs/golden_model/caracterizacion_lut/rtl/rot_w8_mux.v",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E15_efecto_w8.csv",
-      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E15a_w8_17_12.csv"
+      "?? models/floating_point/emulador-golden/docs/golden_model/resultados/09_evidencias_cd_isi/csv/T-E9i_recursos_vigentes_vs_P.csv"
     ]
   },
   "versiones": {
@@ -431,26 +426,52 @@
     "K_w8_mux": 0.7108843537414966,
     "K_w8_18_16": 0.5706521739130435
   },
+  "d2_11": {
+    "auditoria": "figuras y tablas del 09 contra el contexto vigente (celda antes de E8)",
+    "G_E9a": "CD (128, 32) radix-2², generales en DSP; P = 192 como 2 instancias de P = 96; ISI con la mejor FFA por P; fusión = CD sola",
+    "C_vigente_dsp": {
+      "48": 1776,
+      "96": 2832,
+      "192": 5664
+    },
+    "C_alternativa_dsp": {
+      "48": 1800,
+      "96": 3600,
+      "192": 6432
+    },
+    "fusion_P48": {
+      "radix-2²": {
+        "LUT": 96868.63157894736,
+        "FF": 86010.08791208793,
+        "DSP": 1776.0
+      },
+      "2³·2⁴": {
+        "LUT": 120948.63157894736,
+        "FF": 100740.92307692308,
+        "DSP": 1296.0
+      }
+    }
+  },
   "tiempos_s": {
     "E1_s": 0.1,
     "E2_s": 1.2,
-    "E3_calculo_s": 5.9,
-    "E3_s": 6.7,
+    "E3_calculo_s": 4.8,
+    "E3_s": 5.7,
     "E4_s": 0.2,
-    "E5_corridas_s": 2.9,
+    "E5_corridas_s": 3.0,
     "E5_larga_s": 2.0,
-    "E5_s": 5.3,
-    "E6_calculo_s": 5.6,
-    "E6_s": 8.6,
+    "E5_s": 5.2,
+    "E6_calculo_s": 5.2,
+    "E6_s": 8.0,
     "E7_s": 0.3,
-    "E9_sqnr_s": 4.3,
-    "E9_s": 5.1,
-    "E10_s": 0.5,
+    "E9_sqnr_s": 4.2,
+    "E9_s": 6.6,
+    "E10_s": 0.6,
     "E11_s": 0.5,
-    "E12_s": 1.2,
+    "E12_s": 1.0,
     "E13_s": 1.0,
-    "E14_s": 1.4,
+    "E14_s": 1.3,
     "D2.10_s": 0.0,
-    "total": 32.3
+    "total": 32.1
   }
 }

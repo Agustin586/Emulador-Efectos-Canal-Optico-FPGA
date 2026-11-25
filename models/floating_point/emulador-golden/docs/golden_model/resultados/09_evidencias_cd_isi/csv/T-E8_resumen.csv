@@ -3,18 +3,18 @@ Rango de CD,"0 a 200 ps/nm, z de 0 a 10 km; la extensión a 800 ps/nm queda desc
 Parámetros de configuración de la CD,"D, S, z y λ; se informa también D·z","T-E1: mismo D·z da la misma salida (NRMSE ≤ 6.2e-16); λ = 1310 nm cambia la salida (NRMSE 0.56); S = 0,057 a 800 ps/nm: NRMSE 2.6e-03",propuesta
 Arquitectura de la CD,"(C) overlap-save (128, 32), rotadores constantes generales en DSP, W_d = 17, W_c = 12; (256, 64) como alternativa documentada","G-E3a, T-E3b, T-E3c: NRMSE (128, 32) 2.5e-03 a 200 ps/nm ((256, 64): 5.7e-04); T-E11c, T-E11d; T-E12a: peor esquina de 10 km 2.31e-03; G-E12b","decidida con el equipo (D2.5, fila 36 de §1)"
 Por qué no (A),descartada en el rango,"T-E3c: alcance 1e-2 de (A) K_s=5: 10, K_s=7: 10, K_s=9: 10, ext. K_s=9, K_c=3: 17 ps/nm",propuesta
-Por qué no (B),descartada en el rango,"T-E3b y G-E4: K = 15 / 27 a 200 ps/nm y 39 / 59 a 800 (1e-2 / 1e-3); con P = 48, 2304 / 5760 DSP (1e-2, 200 / 800) contra 1128 de (C), externo",propuesta
+Por qué no (B),descartada en el rango,"T-E3b y G-E4: K = 15 / 27 a 200 ps/nm y 39 / 59 a 800 (1e-2 / 1e-3); con P = 48, 2304 / 5760 DSP (1e-2, 200 / 800) contra 1776 de (C) (128, 32)",propuesta
 Nivel de señal y bits enteros,1 bit entero (Q1.15) con RMS ≤ 0.22 (nominal) / ≤ 0.2 (opcional),"T-E5, G-E5: pico con RMS 0,25: 1.120 a 200 y 1.179 a 800 ps/nm; costo de bajar a 0,18: 2.84 dB de SQNR de cuantización",pendiente con el equipo (RMS común)
 ISI: perfiles y B,"gaussiano, Bessel m = 4, Butterworth m = 4; B ≤ 0,5·Rs","G-E6a, G-E6b (salto en Nyquist con B = 0,6), T5 del 08",propuesta
 ISI: diseño y K,"(e) MC pesado por |H_RRC|², K = 12","G-E6a, G-E6c, T5 del 08: K máx. para 1e-2 con (e) y B ≤ 0,5 = 11; NRMSE máx. con K = 12: 7.13e-03",propuesta
 ISI: acumulador,2 bits enteros,"T5b del 08: cota pide I = 2, pico real I = 1 (diseño (e), K = 12)",propuesta
-Paralelismo de referencia,P = 48 por ciclo y por canal,"G-E4, T-E4, T-E6e: (C) 1128 DSP con P = 48; con P = 192 no entra en LUT (externo); ISI K = 12: 864 DSP con P = 48",propuesta
+Paralelismo de referencia,P = 48 por ciclo y por canal,"G-E4, T-E4, G-E9a, T-E9i: (C) (128, 32) 1776 DSP con P = 48; CD + ISI separadas: 4560 DSP con P = 96 (107 %) y 9120 con P = 192: no entran; ISI K = 12: 864 DSP con P = 48",propuesta
 Rango de parámetros de la CD (G.652.D),"z 0–10 km; λ banda O o C; D −3,5 a 3,5 (O) / 0 a 18 (C); S 0 a 0,092; el ARM valida CD efectiva ≤ 200 ps/nm","T-E12a, G-E12a: NRMSE máx. (128, 32) en las esquinas de 10 km 2.31e-03; T-E10 (hasta 40 km, (256, 64)); Scenario acepta O y C (D2.2)","decidida con el equipo (D2.5, fila 35 de §1)"
-Recursos CD + ISI (estimación),"P = 48: 269704 LUT (MCM, calibrado), 1992 DSP","T-E9, G-E9a, G-E9b (conteo calibrado con síntesis de piezas)",propuesta
-"Recursos CD + ISI, rotadores generales en DSP (estimación, D2.3)","P = 48: 187598 LUT, 2664 DSP (calibrado)",T-E9 variante D2.3,propuesta
-Tolerancia del error del método (D2.4),"1e-2 (propuesta, Jiang et al. 2026)","T-E11a a T-E11d y T-E11: alcance de la CD, K de la ISI, recursos y pérdida de SNR para t = 1e-2 a 5e-2",pendiente con el equipo
+"Recursos CD + ISI (estimación, configuración vigente)","P = 48: 2640 DSP, 170943 LUT, 167199 FF (separadas, calibrado)","G-E9a, T-E9i, T-E11 (conteo de D2.9, calibración de D2.10)",propuesta
+"Recursos de la alternativa (256, 64), generales en DSP (estimación, D2.3)","P = 48: 187598 LUT, 2664 DSP (calibrado)",T-E9 variante D2.3,propuesta
+Tolerancia del error del método,"NRMSE ≤ 1e-2 (adoptada, Jiang et al. 2026); 1e-3 solo como referencia","T-E11a a T-E11d y T-E11: alcance de la CD, K de la ISI, recursos y pérdida de SNR para t = 1e-2 a 5e-2","decidida con el equipo (D2.6, fila 27 de §1)"
 "Descomposición de la FFT/IFFT de 128 (D2.8, estudio)","radix-2² vigente (decisión 36, sin cambios)","T-E13, G-E13: radix-2² 1776 DSP / 96869 LUT; menor DSP: 2³·2⁴ 1296 DSP / 120949 LUT; todas ≥ 60 dB con (17, 12)","estudio, sin decidir"
-Fusión de CD e ISI al integrar,un solo bloque en frecuencia,"T-E14b: NRMSE máx. de la fusión con (128, 32) a 200 ps/nm 4.23e-03; T-E14 y G-E14 con P = 96","propuesta, pendiente de feedback del equipo"
+Fusión de CD e ISI al integrar,un solo bloque en frecuencia,"T-E14b: NRMSE máx. de la fusión con (128, 32) a 200 ps/nm 4.23e-03; T-E14 y G-E14 con P = 96; con P = 48 (T-E14 e, f): radix-2²: 1776 DSP, 96869 LUT, 86010 FF; 2³·2⁴: 1296 DSP, 120949 LUT, 100741 FF","propuesta, pendiente de feedback del equipo"
 "P = 96 (D2.9, estudio)",solo con la CD y la ISI fusionadas,"T-E14, G-E14: a. 106.7 % DSP, 72.7 % LUT; b. 95.5 % DSP, 77.4 % LUT; c. 66.3 % DSP, 37.9 % LUT; d. 55.1 % DSP, 42.5 % LUT","estudio, sin decidir"
 Pendiente: km o memoria equivalente,sin decidir,"T-E7: sin par de la lista para 400 GBd, 40 km",pendiente con el equipo
 Pendiente: correlación de las PRBS15,sin decidir,08 (señal común) y guía §6; E5: corridas desplazadas y corrida larga,pendiente con el equipo

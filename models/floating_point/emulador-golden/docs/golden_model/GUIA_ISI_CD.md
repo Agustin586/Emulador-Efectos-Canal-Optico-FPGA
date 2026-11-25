@@ -849,6 +849,13 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_isi_generica.ip
 - Remedio para el W8 con multiplexor: un registro entre el producto y el multiplexor (+95 FF por pieza y 1 ciclo; `utils_09b.w8mux_reg_ff`), incluido en el modelo. Si el W8 constante no cierra dentro del diseño, el mismo registro cuesta unos 60 FF por pieza (no incluido; ~5300 FF con P = 48, ~10 100 con P = 96).
 - Estimaciones actualizadas (factor del W8 a (17, 12) y registro): decisión 36 con P = 48, 96 869 LUT (+3660) y 86 010 FF (+750); reserva 2³·2⁴, +7942 LUT y +11 993 FF; E14 con P = 96, +6994 LUT (radix-2²) y +11 323 LUT (2³·2⁴). No cambia ninguna conclusión de E11, E13 ni E14.
 
+**D2.11 · Figuras y tablas del notebook 09 al contexto vigente; fusión con P = 48** (notebook 09: celda de auditoría antes de E8, T-E9i nueva, filas e y f de T-E14; sin Vivado ni cambios en el núcleo; no cambia ninguna decisión)
+- Auditoría de todas las figuras y tablas: vigentes, regeneradas (mostraban la propuesta con supuestos viejos) e históricas (estado anterior o alternativa, con el rótulo en el título).
+- Regeneradas: **G-E9a** (CD (128, 32) en DSP, separadas y fusionadas, P = 48 / 96 / 192, sin la variante MCM; T-E9i), **G-E4 y T-E4** ((C) 1776 DSP con P = 48 en lugar de los 1128 externos; (256, 64) como alternativa), **G-E3d** (con (128, 32)), **G-E3a y G-E12a** ("1e-2 (adoptada)", "1e-3 (referencia)"), **T-E8** e `informe.html`. T-E5 suma el control con (128, 32).
+- Históricas: T-E9, T-E9a, T-E9b, T-E9e, T-E9f, G-E9b, T-E9g (estado de D2.2), T-E9h (alternativa (256, 64)), G-E10 y T-E10 (hasta 40 km).
+- Configuración vigente contra P (G-E9a): separadas entran solo con P = 48 (2640 DSP, 61,8 %; 170 943 LUT, 40,2 %); fusionadas entran con P = 48 y 96; con P = 192 (2 instancias de P = 96) no entra ninguna (la CD sola pide 133 % de DSP).
+- Fusión con P = 48 (mismo modelo que E14): radix-2² **1776 DSP, 96 869 LUT y 86 010 FF**, exactamente la CD sola (ahorra la ISI entera: 864 DSP, 74 075 LUT, 81 189 FF); 2³·2⁴ 1296 DSP, 120 949 LUT y 100 741 FF.
+
 ## 4. Checklist
 
 Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en el mismo commit que la completa.
@@ -922,6 +929,7 @@ Cada casilla es una tarea atómica: un commit y un push (ver §3.0). Se marca en
 - [x] D2.8 · Notebook 09: E13, comparación de descomposiciones radix-2^k para L = 128 con 64 carriles (estudio, sin cambiar la decisión 36)
 - [x] D2.9 · Guía: conteo de la CD corregido (1776 DSP) y reserva 2³·2⁴ en la decisión 36; notebook 09: T-E11c corregido y E14 (P = 96, ISI separada o fusionada)
 - [x] D2.10 · Caracterización: rotador W8 a (17, 12) y 375 MHz (constante cierra con +0,015 ns; con multiplexor no cierra, registro intermedio); estimaciones del notebook 09 actualizadas
+- [x] D2.11 · Notebook 09: figuras y tablas actualizadas al contexto vigente (auditoría; G-E9a, G-E4, G-E3d, G-E3a, G-E12a y T-E8 regeneradas); fusión con P = 48
 
 **Por hacer (no implementar hasta que el equipo decida RMS común, P y carga de parámetros)**
 - [ ] a · Pasar las decisiones 35 y 36 al núcleo del golden en flotante: `cd_overlap_save` y `cd_fft.py` con V = L/4, (L, V) = (128, 32) y validación de CD efectiva \|D\|·z·(λ/1550 nm)² ≤ 200 ps/nm.

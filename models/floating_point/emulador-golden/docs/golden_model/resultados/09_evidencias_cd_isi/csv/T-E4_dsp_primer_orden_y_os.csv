@@ -2,5 +2,7 @@ opción,P=48,P=96,P=192
 (A) K_s = 5,288,576,1152
 (A) K_s = 7,384,768,1536
 (A) K_s = 9,480,960,1920
-"(C) (256, 64), externo",1128,2256,1536
-% de 4272 para (C),26.4,52.8,36
+"(C) (128, 32), generales en DSP (vigente; P = 192: 2 instancias de P = 96)",1776,2832,5664
+% de 4272 para (C) vigente,41.6,66.3,132.6
+"(C) (256, 64), generales en DSP (alternativa)",1800,3600,6432
+"(C) (256, 64), rotadores en LUT, externo (histórico, hasta D2.10)",1128,2256,1536
